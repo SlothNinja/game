@@ -36,7 +36,7 @@ func getFiltered(c *gin.Context, status, sid, start, length string, t gtype.Type
 
 	if status != "" {
 		st := ToStatus[strings.ToLower(status)]
-		q = q.Filter("Status=", st)
+		q = q.Filter("Status=", int(st))
 		WithStatus(c, st)
 	}
 
@@ -47,7 +47,7 @@ func getFiltered(c *gin.Context, status, sid, start, length string, t gtype.Type
 	}
 
 	if t != gtype.All {
-		q = q.Filter("Type=", t).
+		q = q.Filter("Type=", int(t)).
 			Order("-UpdatedAt")
 	} else {
 		q = q.Order("-UpdatedAt")

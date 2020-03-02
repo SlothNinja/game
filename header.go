@@ -140,11 +140,11 @@ func (uis UserIndices) remove(index int) UserIndices {
 
 func (uis UserIndices) removeAt(i int) UserIndices { return append(uis[:i], uis[i+1:]...) }
 
-func NewHeader(c *gin.Context, g Gamer) *Header {
+func NewHeader(c *gin.Context, g Gamer, id int64) *Header {
 	return &Header{
 		c:     c,
 		gamer: g,
-		Key:   datastore.IDKey("Game", 0, GamesRoot(c)),
+		Key:   datastore.IDKey("Game", id, GamesRoot(c)),
 		// Kind: "Game",
 	}
 }
@@ -203,7 +203,7 @@ func (h *Header) FromForm(c *gin.Context, t gtype.Type) (err error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	h2 := NewHeader(c, nil)
+	h2 := NewHeader(c, nil, 0)
 	if err = restful.BindWith(c, h2, binding.FormPost); err != nil {
 		return
 	}

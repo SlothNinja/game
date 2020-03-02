@@ -694,7 +694,7 @@ func SetAdmin(b bool) gin.HandlerFunc {
 
 func (h *Header) undoKey(c *gin.Context) (k string) {
 	if cu := user.CurrentFrom(c); cu != nil {
-		k = fmt.Sprintf("%s/uid-%d", h.Key, cu.ID)
+		k = fmt.Sprintf("%s/uid-%d", h.Key, cu.ID())
 		// k = fmt.Sprintf("%s/uid-%d", dscache.MakeMemcacheKey(0, datastore.KeyForObj(ctx, h)), cu.ID)
 	}
 	return
@@ -790,7 +790,7 @@ func titleLink(g Gamer) template.HTML {
 	h := g.GetHeader()
 	return template.HTML(fmt.Sprintf(`
 		<div><a href="/%s/game/show/%d">%s</a></div>
-		<div style="font-size:.7em">%s</div>`, h.Type.IDString(), h.ID, h.Title, h.OptString))
+		<div style="font-size:.7em">%s</div>`, h.Type.IDString(), h.ID(), h.Title, h.OptString))
 }
 
 func actionButtons(c *gin.Context, g Gamer) template.HTML {
@@ -802,9 +802,9 @@ func actionButtons(c *gin.Context, g Gamer) template.HTML {
 	case Running:
 		t := h.Type.IDString()
 		if g.GetHeader().CUserIsCPlayerOrAdmin(c) {
-			return template.HTML(fmt.Sprintf(`<a class="mybutton" href="/%s/game/show/%d">Play</a>`, t, h.ID))
+			return template.HTML(fmt.Sprintf(`<a class="mybutton" href="/%s/game/show/%d">Play</a>`, t, h.ID()))
 		} else {
-			return template.HTML(fmt.Sprintf(`<a class="mybutton" href="/%s/game/show/%d">Show</a>`, t, h.ID))
+			return template.HTML(fmt.Sprintf(`<a class="mybutton" href="/%s/game/show/%d">Show</a>`, t, h.ID()))
 		}
 	case Recruiting:
 		t := h.Type.IDString()
@@ -829,7 +829,7 @@ func actionButtons(c *gin.Context, g Gamer) template.HTML {
 		$('#opener-%d').click(function() {
 			$('#dialog-%d').dialog('open');
 		});
-	</script>`, h.ID, h.ID, h.Stub(), h.ID, h.ID, h.ID, h.ID, h.ID))
+	</script>`, h.ID(), h.ID(), h.Stub(), h.ID(), h.ID(), h.ID(), h.ID(), h.ID()))
 				//				return template.HTML(fmt.Sprintf(`
 				//				<form class="myForm" action="/%s/game/accept/%d" method="post">
 				//					<input name="_method" type="hidden" value="PUT" />
@@ -842,7 +842,7 @@ func actionButtons(c *gin.Context, g Gamer) template.HTML {
 					<input name="_method" type="hidden" value="PUT" />
 					<input id="user_id" name="user[id]" type="hidden" value="%v">
 					<input id="accept-%d" class="mybutton" type="submit" value="Accept" />
-				</form>`, t, h.ID, cu.ID, h.ID))
+				</form>`, t, h.ID(), cu.ID(), h.ID()))
 			}
 		case g.CanDropout(cu):
 			return template.HTML(fmt.Sprintf(`
@@ -850,7 +850,7 @@ func actionButtons(c *gin.Context, g Gamer) template.HTML {
 					<input name="_method" type="hidden" value="PUT" />
 					<input id="user_id" name="user[id]" type="hidden" value="%v">
 					<input id="drop-%d" class="mybutton" type="submit" value="Drop" />
-				</form>`, t, h.ID, cu.ID, h.ID))
+				</form>`, t, h.ID(), cu.ID(), h.ID()))
 		default:
 			return ""
 		}
