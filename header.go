@@ -913,8 +913,8 @@ func (h *Header) SendTurnNotificationsTo(c *gin.Context, ps ...Playerer) error {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	subject := fmt.Sprintf("It's your turn in %s (%s #%d).", h.Type, h.Title, h.ID)
-	url := fmt.Sprintf(`<a href="http://www.slothninja.com/%s/game/show/%d">here</a>`, h.Type.Prefix(), h.ID)
+	subject := fmt.Sprintf("It's your turn in %s (%s #%d).", h.Type, h.Title, h.ID())
+	url := fmt.Sprintf(`<a href="http://www.slothninja.com/%s/game/show/%d">here</a>`, h.Type.Prefix(), h.ID())
 	body := fmt.Sprintf(`<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 		<html>
 			<head>
