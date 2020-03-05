@@ -18,7 +18,6 @@ import (
 	"github.com/SlothNinja/user"
 	stats "github.com/SlothNinja/user-stats"
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
 	"google.golang.org/appengine/mail"
 )
 
@@ -60,10 +59,28 @@ type Header struct {
 	Progress      string      `form:"progress" json:"progress"`
 	Options       []string    `form:"options" json:"options"`
 	OptString     string      `form:"opt-string" json:"optString"`
-	SavedState    []byte      `gae:"SavedState,noindex" json:"-"`
+	SavedState    []byte      `datastore:"SavedState,noindex" json:"-"`
 	CreatedAt     time.Time   `form:"created-at" json:"createdAt"`
 	UpdatedAt     time.Time   `form:"updated-at" json:"updatedAt"`
 	UpdateCount   int         `json:"-"`
+}
+
+func (h *Header) Load(ps []datastore.Property) error {
+	return datastore.LoadStruct(h, ps)
+}
+
+func (h *Header) Save() ([]datastore.Property, error) {
+	t := time.Now()
+	if h.CreatedAt.IsZero() {
+		h.CreatedAt = t
+	}
+	h.UpdatedAt = t
+	return datastore.SaveStruct(h)
+}
+
+func (h *Header) LoadKey(k *datastore.Key) error {
+	h.Key = k
+	return nil
 }
 
 func (h *Header) CTX() *gin.Context {
@@ -196,35 +213,53 @@ func actionPath(r *http.Request) string {
 }
 
 func (h *Header) FromParams(c *gin.Context, t gtype.Type) error {
-	return h.FromForm(c, t)
-}
-
-func (h *Header) FromForm(c *gin.Context, t gtype.Type) (err error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	h2 := NewHeader(c, nil, 0)
-	if err = restful.BindWith(c, h2, binding.FormPost); err != nil {
-		return
+	cu := user.CurrentFrom(c)
+	h.Title = cu.Name + "'s Game"
+	// h.NumPlayers = 4
+	// h.Creator = cu
+	// h.CreatorID = cu.ID()
+	// h.CreatorSID = user.GenID(cu.GoogleID)
+	// h.AddUser(cu)
+	h.Status = Recruiting
+	h.Type = t
+	return nil
+	// return h.FromForm(c, t)
+}
+
+func (h *Header) FromForm(c *gin.Context, t gtype.Type) error {
+	log.Debugf("Entering")
+	defer log.Debugf("Exiting")
+
+	obj := struct {
+		Title      string `form:"title"`
+		NumPlayers int    `form:"num-players" binding"min=0,max=5"`
+		Password   string `form:"password"`
+	}{}
+
+	err := c.ShouldBind(&obj)
+	if err != nil {
+		// if err = restful.BindWith(c, h2, binding.FormPost); err != nil {
+		return err
 	}
+
+	log.Debugf("obj: %#v", obj)
 
 	cu := user.CurrentFrom(c)
-	log.Debugf("h2: %#v", h2)
 
-	if h2.Title == "" {
-		h.Title = cu.Name + "'s Game"
-	} else {
-		h.Title = h2.Title
+	h.Title = cu.Name + "'s Game"
+	if obj.Title != "" {
+		h.Title = obj.Title
 	}
 
-	if h2.NumPlayers == 0 {
-		h.NumPlayers = 4
-		log.Debugf("h: %#v", h)
-	} else {
-		h.NumPlayers = h2.NumPlayers
+	h.NumPlayers = 4
+	if obj.NumPlayers >= 1 && obj.NumPlayers <= 5 {
+		h.NumPlayers = obj.NumPlayers
 	}
 
-	h.Password = h2.Password
+	h.Password = obj.Password
 	h.Creator = cu
 	h.CreatorID = cu.ID()
 	h.CreatorSID = user.GenID(cu.GoogleID)
@@ -294,9 +329,9 @@ func (h *Header) AfterLoad(gamer Gamer) error {
 		ids = append(ids, h.CreatorID)
 	}
 
-	l = len(ids)
-	us := make(user.Users, l)
-	ks := make([]*datastore.Key, l)
+	l2 := len(ids)
+	us := make(user.Users, l2)
+	ks := make([]*datastore.Key, l2)
 	for i := range us {
 		us[i] = user.New(c, ids[i])
 		ks[i] = us[i].Key
@@ -363,6 +398,7 @@ func (h *Header) RemoveUser(u2 *user.User) {
 
 func (h *Header) updateUserFields() {
 	l := len(h.Users)
+	log.Debugf("l: %v", l)
 
 	h.UserIDS = make([]int64, l)
 	h.UserNames = make([]string, l)
@@ -379,7 +415,10 @@ func (h *Header) AddUser(u *user.User) {
 }
 
 func (h *Header) AddUsers(us ...*user.User) {
+	log.Debugf("h.Users: %v", h.Users)
+	log.Debugf("us: %v", us)
 	h.Users = append(h.Users, us...)
+	log.Debugf("h.Users: %v", h.Users)
 	h.updateUserFields()
 }
 

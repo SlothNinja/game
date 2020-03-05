@@ -69,6 +69,8 @@ func (h *Header) Accept(c *gin.Context, u *user.User) (start bool, err error) {
 	}
 
 	h.AddUser(u)
+	log.Debugf("NumPlayers: %v", h.NumPlayers)
+	log.Debugf("Users: %v", h.Users)
 
 	if len(h.Users) == h.NumPlayers {
 		start = true
@@ -76,16 +78,16 @@ func (h *Header) Accept(c *gin.Context, u *user.User) (start bool, err error) {
 	return
 }
 
-func (h *Header) validateAccept(c *gin.Context, u *user.User) (err error) {
+func (h *Header) validateAccept(c *gin.Context, u *user.User) error {
 	switch {
 	case len(h.UserIDS) >= h.NumPlayers:
-		err = sn.NewVError("Game already has the maximum number of players.")
+		return sn.NewVError("Game already has the maximum number of players.")
 	case h.HasUser(u):
-		err = sn.NewVError("%s has already accepted this invitation.", u.Name)
+		return sn.NewVError("%s has already accepted this invitation.", u.Name)
 	case h.Password != "" && c.PostForm("password") != h.Password:
-		err = sn.NewVError("%s provided incorrect password for Game #%d: %s.", u.Name, h.ID, h.Title)
+		return sn.NewVError("%s provided incorrect password for Game #%d: %s.", u.Name, h.ID, h.Title)
 	}
-	return
+	return nil
 }
 
 func (h *Header) Drop(u *user.User) (err error) {
