@@ -945,12 +945,12 @@ func (h *Header) SendTurnNotificationsTo(c *gin.Context, ps ...Playerer) error {
 }
 
 func (h Header) indexFor(u *user.User) (i int) {
-	sid := user.GenID(u.GoogleID)
-	for i = range h.UserSIDS {
-		if h.UserSIDS[i] == sid {
-			return
-		}
-	}
+	// sid := user.GenID(u.GoogleID)
+	// for i = range h.UserSIDS {
+	// 	if h.UserSIDS[i] == sid {
+	// 		return
+	// 	}
+	// }
 
 	for i = range h.UserIDS {
 		if h.UserIDS[i] == u.ID() {
