@@ -9,9 +9,9 @@ import (
 
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
+	"github.com/SlothNinja/sn"
 	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
-	"google.golang.org/appengine"
 )
 
 func Index(prefix string) gin.HandlerFunc {
@@ -24,14 +24,14 @@ func Index(prefix string) gin.HandlerFunc {
 		case Recruiting:
 			c.HTML(http.StatusOK, "shared/invitation_index", gin.H{
 				"Context":   c,
-				"VersionID": appengine.VersionID(c),
+				"VersionID": sn.VersionID(),
 				"CUser":     user.CurrentFrom(c),
 				"Games":     gs,
 			})
 		default:
 			c.HTML(http.StatusOK, "shared/multi_games_index", gin.H{
 				"Context":   c,
-				"VersionID": appengine.VersionID(c),
+				"VersionID": sn.VersionID(),
 				"CUser":     user.CurrentFrom(c),
 				"Games":     gs,
 				"Status":    status,
