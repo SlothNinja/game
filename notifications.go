@@ -10,7 +10,7 @@ import (
 	gType "github.com/SlothNinja/type"
 	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
-	"google.golang.org/appengine/mail"
+	"github.com/mailjet/mailjet-apiv3-go"
 )
 
 const (
@@ -50,14 +50,19 @@ func DailyNotifications(c *gin.Context) {
 		}
 	}
 
-	msg := &mail.Message{Sender: sender, Subject: subject}
+	msg := mailjet.InfoMessagesV31{
+		From: &mailjet.RecipientV31{
+			Email: "webmaster@slothninja.com",
+			Name:  "Webmaster",
+		},
+		Subject: subject,
+	}
 	tmpl := restful.TemplatesFrom(c)["shared/daily_notification"]
 	buf := new(bytes.Buffer)
 
 	for uid, gameInfos := range notifications {
+		m := msg
 		u := user.New(c, uid)
-		// u := user.New(c)
-		// u.ID = uid
 
 		err = dsClient.Get(c, u.Key, u)
 		if err != nil {
@@ -76,12 +81,17 @@ func DailyNotifications(c *gin.Context) {
 			continue
 		}
 
-		msg.To = []string{u.Email}
-		msg.HTMLBody = buf.String()
+		m.HTMLPart = buf.String()
+		m.To = &mailjet.RecipientsV31{
+			mailjet.RecipientV31{
+				Email: u.Email,
+				Name:  u.Name,
+			},
+		}
 
-		err = send.Message(c, msg)
+		_, err = send.Messages(c, m)
 		if err != nil {
-			log.Errorf("enqueuing email message: %#v geneerated error: %s", msg, err.Error())
+			log.Errorf("enqueuing email message: %#v geneerated error: %s", m, err.Error())
 			buf.Reset()
 			continue
 		}

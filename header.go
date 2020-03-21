@@ -18,7 +18,7 @@ import (
 	"github.com/SlothNinja/user"
 	stats "github.com/SlothNinja/user-stats"
 	"github.com/gin-gonic/gin"
-	"google.golang.org/appengine/mail"
+	"github.com/mailjet/mailjet-apiv3-go"
 )
 
 // Header provides fields common to all games.
@@ -926,22 +926,32 @@ func (h *Header) SendTurnNotificationsTo(c *gin.Context, ps ...Playerer) error {
 			</body>
 		</html>`, subject, url)
 
-	m := &mail.Message{
-		Sender:   "webmaster@slothninja.com",
+	msgInfo := mailjet.InfoMessagesV31{
+		From: &mailjet.RecipientV31{
+			Email: "webmaster@slothninja.com",
+			Name:  "Webmaster",
+		},
 		Subject:  subject,
-		HTMLBody: body,
+		HTMLPart: body,
 	}
+
+	msgInfos := []mailjet.InfoMessagesV31{}
 
 	for _, p := range ps {
-		if p.User().EmailNotifications {
-			m.To = []string{p.User().Email}
-			if err := send.Message(c, m); err != nil {
-				log.Errorf("sending notification: %#v\n generated error: %v", m, err)
+		u := p.User()
+		if u.EmailNotifications {
+			m := msgInfo
+			m.To = &mailjet.RecipientsV31{
+				mailjet.RecipientV31{
+					Email: u.Email,
+					Name:  u.Name,
+				},
 			}
+			msgInfos = append(msgInfos, m)
 		}
 	}
-
-	return nil
+	_, err := send.Messages(c, msgInfos...)
+	return err
 }
 
 func (h Header) indexFor(u *user.User) (i int) {
