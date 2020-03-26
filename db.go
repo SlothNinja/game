@@ -18,18 +18,21 @@ const (
 	NoCount   = -1
 )
 
+type Client struct {
+	*datastore.Client
+}
+
+func NewClient(dsClient *datastore.Client) Client {
+	return Client{dsClient}
+}
+
 func getAllQuery(c *gin.Context) *datastore.Query {
 	return datastore.NewQuery("Game").Ancestor(GamesRoot(c))
 }
 
-func getFiltered(c *gin.Context, status, sid, start, length string, t gtype.Type) (Gamers, int64, error) {
+func (client Client) filtered(c *gin.Context, status, sid, start, length string, t gtype.Type) (Gamers, int64, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
-
-	dsClient, err := datastore.NewClient(c, "")
-	if err != nil {
-		return nil, 0, err
-	}
 
 	q := getAllQuery(c).
 		KeysOnly()
@@ -53,7 +56,7 @@ func getFiltered(c *gin.Context, status, sid, start, length string, t gtype.Type
 		q = q.Order("-UpdatedAt")
 	}
 
-	cnt, err := dsClient.Count(c, q)
+	cnt, err := client.Count(c, q)
 	if err != nil {
 		log.Errorf("sn/game#GetFiltered q.Count Error: %s", err)
 		return nil, 0, err
@@ -71,9 +74,9 @@ func getFiltered(c *gin.Context, status, sid, start, length string, t gtype.Type
 		}
 	}
 
-	ks, err := dsClient.GetAll(c, q, nil)
+	ks, err := client.GetAll(c, q, nil)
 	if err != nil {
-		log.Errorf("getFiltered GetAll Error: %s", err)
+		log.Errorf(err.Error())
 		return nil, 0, err
 	}
 
@@ -99,14 +102,15 @@ func getFiltered(c *gin.Context, status, sid, start, length string, t gtype.Type
 		// }
 	}
 
-	err = dsClient.GetMulti(c, ks, hs)
+	err = client.GetMulti(c, ks, hs)
 	if err != nil {
 		log.Errorf("SN/Game#GetFiltered datastore.Get Error: %s", err)
 		return nil, 0, err
 	}
 
 	for i := range hs {
-		if err = hs[i].AfterLoad(gs[i]); err != nil {
+		err := client.AfterLoad(c, hs[i], gs[i])
+		if err != nil {
 			log.Errorf("SN/Game#GetFiltered h.AfterLoad Error: %s", err)
 			return nil, 0, err
 		}
@@ -230,12 +234,12 @@ func countFrom(c *gin.Context) (cnt int64) {
 //	WithGamers(c, gs)
 //}
 
-func GetFiltered(t gtype.Type) gin.HandlerFunc {
+func (client Client) getFiltered(t gtype.Type) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		log.Debugf("Entering")
 		defer log.Debugf("Exiting")
 
-		gs, cnt, err := getFiltered(c, c.Param("status"), c.Param("uid"), c.PostForm("start"), c.PostForm("length"), t)
+		gs, cnt, err := client.filtered(c, c.Param("status"), c.Param("uid"), c.PostForm("start"), c.PostForm("length"), t)
 
 		if err != nil {
 			log.Errorf(err.Error())
@@ -246,11 +250,11 @@ func GetFiltered(t gtype.Type) gin.HandlerFunc {
 	}
 }
 
-func GetRunning(c *gin.Context) {
+func (client Client) getRunning(c *gin.Context) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	gs, cnt, err := getFiltered(c, c.Param("status"), "", "", "", gtype.All)
+	gs, cnt, err := client.filtered(c, c.Param("status"), "", "", "", gtype.All)
 
 	if err != nil {
 		log.Errorf(err.Error())
