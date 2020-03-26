@@ -234,7 +234,7 @@ func countFrom(c *gin.Context) (cnt int64) {
 //	WithGamers(c, gs)
 //}
 
-func (client Client) getFiltered(t gtype.Type) gin.HandlerFunc {
+func (client Client) GetFiltered(t gtype.Type) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		log.Debugf("Entering")
 		defer log.Debugf("Exiting")

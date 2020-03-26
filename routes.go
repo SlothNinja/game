@@ -17,7 +17,7 @@ func (client Client) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 	// JSON Data for Index
 	g1.POST("/:status/json",
 		gtype.SetTypes(),
-		client.getFiltered(gtype.All),
+		client.GetFiltered(gtype.All),
 		client.JSONIndexAction,
 	)
 
@@ -30,7 +30,7 @@ func (client Client) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 	// JSON Data for Index
 	g1.POST("/:status/user/:uid/json",
 		gtype.SetTypes(),
-		client.getFiltered(gtype.All),
+		client.GetFiltered(gtype.All),
 		client.JSONIndexAction,
 	)
 
