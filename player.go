@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 
+	"cloud.google.com/go/datastore"
 	"github.com/SlothNinja/color"
 	"github.com/SlothNinja/rating"
 	"github.com/SlothNinja/user"
@@ -142,6 +143,10 @@ func (h *Header) UserIDFor(p Playerer) (id int64) {
 		id = h.UserIDS[p.ID()]
 	}
 	return
+}
+
+func (h *Header) UserKeyFor(p Playerer) *datastore.Key {
+	return user.NewKey(nil, h.UserIDFor(p))
 }
 
 func (h *Header) NameFor(p Playerer) (n string) {
