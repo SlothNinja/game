@@ -74,8 +74,8 @@ type Playerer interface {
 	Name() string
 	Color() color.Color
 	ColorMap() color.Colors
-	//Init(Gamer)
-	Rating() *rating.CurrentRating
+	// Init(Gamer)
+	// Rating() *rating.CurrentRating
 	Stats() *stats.Stats
 }
 
@@ -195,13 +195,13 @@ func (h *Header) EmailFor(p Playerer) (em string) {
 	return
 }
 
-func (p *Player) Rating() *rating.CurrentRating {
-	if p.rating != nil {
-		return p.rating
-	}
-	p.rating, _ = rating.For(p.User().CTX(), p.User(), p.Game().GetHeader().Type)
-	return p.rating
-}
+// func (p *Player) Rating() *rating.CurrentRating {
+// 	if p.rating != nil {
+// 		return p.rating
+// 	}
+// 	p.rating, _ = rating.For(p.User().CTX(), p.User(), p.Game().GetHeader().Type)
+// 	return p.rating
+// }
 
 func (p *Player) Stats() *stats.Stats {
 	if p.stats != nil {
