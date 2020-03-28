@@ -481,11 +481,12 @@ func (client Client) JSONIndexAction(c *gin.Context) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	if data, err := toGameTable(c); err != nil {
+	data, err := toGameTable(c)
+	if err != nil {
 		c.JSON(http.StatusOK, fmt.Sprintf("%v", err))
-	} else {
-		c.JSON(http.StatusOK, data)
+		return
 	}
+	c.JSON(http.StatusOK, data)
 }
 
 func toGameTable(c *gin.Context) (*jGamesIndex, error) {

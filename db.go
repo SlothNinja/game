@@ -30,7 +30,7 @@ func getAllQuery(c *gin.Context) *datastore.Query {
 	return datastore.NewQuery("Game").Ancestor(GamesRoot(c))
 }
 
-func (client Client) filtered(c *gin.Context, status, sid, start, length string, t gtype.Type) (Gamers, int64, error) {
+func (client Client) GetFiltered(c *gin.Context, status, sid, start, length string, t gtype.Type) (Gamers, int64, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
@@ -234,27 +234,30 @@ func countFrom(c *gin.Context) (cnt int64) {
 //	WithGamers(c, gs)
 //}
 
-func (client Client) GetFiltered(t gtype.Type) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		log.Debugf("Entering")
-		defer log.Debugf("Exiting")
-
-		gs, cnt, err := client.filtered(c, c.Param("status"), c.Param("uid"), c.PostForm("start"), c.PostForm("length"), t)
-
-		if err != nil {
-			log.Errorf(err.Error())
-			c.Redirect(http.StatusSeeOther, homePath)
-			c.Abort()
-		}
-		withGamers(withCount(c, cnt), gs)
-	}
-}
+// func (client Client) GetFiltered(t gtype.Type) ([]Gamer, int, error) {
+// 	log.Debugf("Entering")
+// 	defer log.Debugf("Exiting")
+//
+// 	gs, cnt, err := client.filtered(
+// 		c,
+// 		c.Param("status"),
+// 		c.Param("uid"),
+// 		c.PostForm("start"),
+// 		c.PostForm("length"),
+// 		t,
+// 	)
+//
+// 	if err != nil {
+// 		return nil, -1, err
+// 	}
+// 	return gs, cnt, nil
+// }
 
 func (client Client) getRunning(c *gin.Context) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	gs, cnt, err := client.filtered(c, c.Param("status"), "", "", "", gtype.All)
+	gs, cnt, err := client.GetFiltered(c, c.Param("status"), "", "", "", gtype.All)
 
 	if err != nil {
 		log.Errorf(err.Error())
