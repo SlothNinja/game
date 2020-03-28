@@ -4,7 +4,7 @@ require (
 	cloud.google.com/go/datastore v1.1.0
 	github.com/SlothNinja/color v0.0.0-20200316011031-586fe3c95fae
 	github.com/SlothNinja/log v0.0.2
-	github.com/SlothNinja/rating v0.0.0-20200319041223-e4d234b4c689
+	github.com/SlothNinja/rating v0.0.0-20200321184620-3c544e573b3b
 	github.com/SlothNinja/restful v0.0.0-20200317231650-e1a2eb3f56b2
 	github.com/SlothNinja/send v0.0.0-20200321040208-716c0a7a4470
 	github.com/SlothNinja/sn v0.0.0-20200319230317-a899e08418dc
