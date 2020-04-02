@@ -285,7 +285,7 @@ func (h *Header) CurrentUser() *user.User {
 	return user.CurrentFrom(h.CTX())
 }
 
-func (client Client) AfterLoad(c *gin.Context, gamer Gamer, h *Header) error {
+func (client Client) AfterLoad(c *gin.Context, h *Header) error {
 	l := len(h.UserIDS)
 
 	ids := make([]int64, l)

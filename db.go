@@ -91,7 +91,7 @@ func (client Client) getFiltered(c *gin.Context, status, sid, start, length stri
 	}
 
 	for i := range hs {
-		err = client.AfterLoad(c, gs[i], hs[i])
+		err = client.AfterLoad(c, hs[i])
 		if err != nil {
 			return nil, 0, err
 		}
