@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"html/template"
 
+	"cloud.google.com/go/datastore"
 	"github.com/SlothNinja/color"
+	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/rating"
 	"github.com/SlothNinja/user"
 	stats "github.com/SlothNinja/user-stats"
@@ -199,7 +201,15 @@ func (p *Player) Rating() *rating.CurrentRating {
 	if p.rating != nil {
 		return p.rating
 	}
-	p.rating, _ = rating.For(p.User().CTX(), p.User(), p.Game().GetHeader().Type)
+
+	c := p.User().CTX()
+	dsClient, err := datastore.NewClient(c, "")
+	if err != nil {
+		log.Warningf("unable to open datastore client")
+	}
+
+	client := rating.NewClient(dsClient)
+	p.rating, _ = client.For(c, p.User(), p.Game().GetHeader().Type)
 	return p.rating
 }
 
