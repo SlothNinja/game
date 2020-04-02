@@ -27,7 +27,7 @@ type inf struct {
 type infs []*inf
 type notifications map[int64]infs
 
-func (client Client) dailyNotifications(c *gin.Context) {
+func DailyNotifications(c *gin.Context) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 

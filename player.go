@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"html/template"
 
-	"cloud.google.com/go/datastore"
 	"github.com/SlothNinja/color"
 	"github.com/SlothNinja/rating"
 	"github.com/SlothNinja/user"
@@ -75,8 +74,8 @@ type Playerer interface {
 	Name() string
 	Color() color.Color
 	ColorMap() color.Colors
-	// Init(Gamer)
-	// Rating() *rating.CurrentRating
+	//Init(Gamer)
+	Rating() *rating.CurrentRating
 	Stats() *stats.Stats
 }
 
@@ -145,10 +144,6 @@ func (h *Header) UserIDFor(p Playerer) (id int64) {
 	return
 }
 
-func (h *Header) UserKeyFor(p Playerer) *datastore.Key {
-	return user.NewKey(nil, h.UserIDFor(p))
-}
-
 func (h *Header) NameFor(p Playerer) (n string) {
 	if p != nil {
 		n = h.NameByPID(p.ID())
@@ -200,13 +195,13 @@ func (h *Header) EmailFor(p Playerer) (em string) {
 	return
 }
 
-// func (p *Player) Rating() *rating.CurrentRating {
-// 	if p.rating != nil {
-// 		return p.rating
-// 	}
-// 	p.rating, _ = rating.For(p.User().CTX(), p.User(), p.Game().GetHeader().Type)
-// 	return p.rating
-// }
+func (p *Player) Rating() *rating.CurrentRating {
+	if p.rating != nil {
+		return p.rating
+	}
+	p.rating, _ = rating.For(p.User().CTX(), p.User(), p.Game().GetHeader().Type)
+	return p.rating
+}
 
 func (p *Player) Stats() *stats.Stats {
 	if p.stats != nil {

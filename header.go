@@ -303,7 +303,14 @@ func (h *Header) CurrentUser() *user.User {
 	return user.CurrentFrom(h.CTX())
 }
 
-func (client Client) AfterLoad(c *gin.Context, h *Header, gamer Gamer) error {
+func (h *Header) AfterLoad(gamer Gamer) error {
+	c := h.CTX()
+
+	dsClient, err := datastore.NewClient(c, "")
+	if err != nil {
+		return err
+	}
+
 	l := len(h.UserIDS)
 
 	ids := make([]int64, l)
@@ -332,7 +339,7 @@ func (client Client) AfterLoad(c *gin.Context, h *Header, gamer Gamer) error {
 		// us[i].ID = ids[i]
 	}
 
-	err := client.GetMulti(c, ks, us)
+	err = dsClient.GetMulti(c, ks, us)
 	if err != nil {
 		return err
 	}
