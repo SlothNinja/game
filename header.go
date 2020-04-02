@@ -26,16 +26,10 @@ type Header struct {
 	c     *gin.Context
 	gamer interface{}
 
-	// Creator *user.User     `gae:"-" json:"-"`
-	Creator *user.User `datastore:"-" json:"-"`
-	// Users   user.Users     `gae:"-" json:"users"`
-	Users user.Users `datastore:"-" json:"users"`
-	// Stats   []*stats.Stats `gae:"-" json:"-"`
-	Stats []*stats.Stats `datastore:"-" json:"-"`
-	// ID      int64          `gae:"$id"`
-	// Parent  *datastore.Key `gae:"$parent"`
-	// Kind    string         `gae:"$kind"`
-	Key *datastore.Key `datastore:"__key__"`
+	Creator *user.User     `datastore:"-" json:"-"`
+	Users   user.Users     `datastore:"-" json:"users"`
+	Stats   []*stats.Stats `datastore:"-" json:"-"`
+	Key     *datastore.Key `datastore:"__key__"`
 
 	Type          gtype.Type  `json:"type"`
 	Title         string      `form:"title" json:"title"`
@@ -91,7 +85,6 @@ type headerer interface {
 	GetHeader() *Header
 	GetAcceptDialog() bool
 	AcceptedPlayers() int
-	//CurrentUserIsCurrentPlayerOrAdmin() bool
 	PlayererByID(int) Playerer
 	PlayererByUserID(int64) Playerer
 	PlayererByIndex(int) Playerer
@@ -102,7 +95,6 @@ type headerer interface {
 	NextPlayerer(...Playerer) Playerer
 	DefaultColorMap() color.Colors
 	UserLinks() template.HTML
-	//PlayerLinks() template.HTML
 	Private() bool
 	CanAdd(*user.User) bool
 	CanDropout(*user.User) bool
@@ -162,7 +154,6 @@ func NewHeader(c *gin.Context, g Gamer, id int64) *Header {
 		c:     c,
 		gamer: g,
 		Key:   datastore.IDKey("Game", id, GamesRoot(c)),
-		// Kind: "Game",
 	}
 }
 
@@ -218,15 +209,9 @@ func (h *Header) FromParams(c *gin.Context, t gtype.Type) error {
 
 	cu := user.CurrentFrom(c)
 	h.Title = cu.Name + "'s Game"
-	// h.NumPlayers = 4
-	// h.Creator = cu
-	// h.CreatorID = cu.ID()
-	// h.CreatorSID = user.GenID(cu.GoogleID)
-	// h.AddUser(cu)
 	h.Status = Recruiting
 	h.Type = t
 	return nil
-	// return h.FromForm(c, t)
 }
 
 func (h *Header) FromForm(c *gin.Context, t gtype.Type) error {
@@ -241,11 +226,8 @@ func (h *Header) FromForm(c *gin.Context, t gtype.Type) error {
 
 	err := c.ShouldBind(&obj)
 	if err != nil {
-		// if err = restful.BindWith(c, h2, binding.FormPost); err != nil {
 		return err
 	}
-
-	log.Debugf("obj: %#v", obj)
 
 	cu := user.CurrentFrom(c)
 
@@ -303,14 +285,7 @@ func (h *Header) CurrentUser() *user.User {
 	return user.CurrentFrom(h.CTX())
 }
 
-func (h *Header) AfterLoad(gamer Gamer) error {
-	c := h.CTX()
-
-	dsClient, err := datastore.NewClient(c, "")
-	if err != nil {
-		return err
-	}
-
+func (client Client) AfterLoad(c *gin.Context, gamer Gamer, h *Header) error {
 	l := len(h.UserIDS)
 
 	ids := make([]int64, l)
@@ -335,11 +310,9 @@ func (h *Header) AfterLoad(gamer Gamer) error {
 	for i := range us {
 		us[i] = user.New(c, ids[i])
 		ks[i] = us[i].Key
-		// us[i] = user.New(c)
-		// us[i].ID = ids[i]
 	}
 
-	err = dsClient.GetMulti(c, ks, us)
+	err := client.DS.GetMulti(c, ks, us)
 	if err != nil {
 		return err
 	}
@@ -398,8 +371,6 @@ func (h *Header) RemoveUser(u2 *user.User) {
 
 func (h *Header) updateUserFields() {
 	l := len(h.Users)
-	log.Debugf("l: %v", l)
-
 	h.UserIDS = make([]int64, l)
 	h.UserNames = make([]string, l)
 	h.UserSIDS = make([]string, l)
@@ -415,10 +386,7 @@ func (h *Header) AddUser(u *user.User) {
 }
 
 func (h *Header) AddUsers(us ...*user.User) {
-	log.Debugf("h.Users: %v", h.Users)
-	log.Debugf("us: %v", us)
 	h.Users = append(h.Users, us...)
-	log.Debugf("h.Users: %v", h.Users)
 	h.updateUserFields()
 }
 
@@ -521,14 +489,10 @@ func (h *Header) NextPlayerer(ps ...Playerer) (p Playerer) {
 
 	cp := h.CurrentPlayerer()
 	i := cp.Index() + 1
-	log.Debugf("cp: %#v", cp)
-	log.Debugf("i: %#v", i)
 	if len(ps) == 1 {
 		i = ps[0].Index() + 1
-		log.Debugf("len(ps) == 1 => i: %#v", i)
 	}
 	p = h.PlayererByIndex(i)
-	log.Debugf("p: %#v", p)
 	return
 }
 
@@ -955,13 +919,6 @@ func (h *Header) SendTurnNotificationsTo(c *gin.Context, ps ...Playerer) error {
 }
 
 func (h Header) indexFor(u *user.User) (i int) {
-	// sid := user.GenID(u.GoogleID)
-	// for i = range h.UserSIDS {
-	// 	if h.UserSIDS[i] == sid {
-	// 		return
-	// 	}
-	// }
-
 	for i = range h.UserIDS {
 		if h.UserIDS[i] == u.ID() {
 			return

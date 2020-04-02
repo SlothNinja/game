@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"html/template"
 
-	"cloud.google.com/go/datastore"
 	"github.com/SlothNinja/color"
-	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/rating"
 	"github.com/SlothNinja/user"
 	stats "github.com/SlothNinja/user-stats"
@@ -76,8 +74,8 @@ type Playerer interface {
 	Name() string
 	Color() color.Color
 	ColorMap() color.Colors
-	//Init(Gamer)
-	Rating() *rating.CurrentRating
+	// Init(Gamer)
+	// Rating() *rating.CurrentRating
 	Stats() *stats.Stats
 }
 
@@ -197,21 +195,21 @@ func (h *Header) EmailFor(p Playerer) (em string) {
 	return
 }
 
-func (p *Player) Rating() *rating.CurrentRating {
-	if p.rating != nil {
-		return p.rating
-	}
-
-	c := p.User().CTX()
-	dsClient, err := datastore.NewClient(c, "")
-	if err != nil {
-		log.Warningf("unable to open datastore client")
-	}
-
-	client := rating.NewClient(dsClient)
-	p.rating, _ = client.For(c, p.User(), p.Game().GetHeader().Type)
-	return p.rating
-}
+// func (p *Player) Rating() *rating.CurrentRating {
+// 	if p.rating != nil {
+// 		return p.rating
+// 	}
+//
+// 	c := p.User().CTX()
+// 	dsClient, err := datastore.NewClient(c, "")
+// 	if err != nil {
+// 		log.Warningf("unable to open datastore client")
+// 	}
+//
+// 	client := rating.NewClient(dsClient)
+// 	p.rating, _ = client.For(c, p.User(), p.Game().GetHeader().Type)
+// 	return p.rating
+// }
 
 func (p *Player) Stats() *stats.Stats {
 	if p.stats != nil {

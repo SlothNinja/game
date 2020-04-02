@@ -12,11 +12,9 @@ import (
 
 type Gamers []Gamer
 type Gamer interface {
-	//Start(context.Context) error
 	PhaseName() string
 	FromParams(*gin.Context, gtype.Type) error
 	ColorMapFor(*user.User) color.Map
-	//NewKey(*gin.Context, int64) *datastore.Key
 	headerer
 }
 
@@ -30,20 +28,11 @@ type hasUpdate interface {
 
 func GamesRoot(c *gin.Context) *datastore.Key {
 	return datastore.NameKey("Games", "root", nil)
-	// return datastore.NewKey(c, "Games", "root", 0, nil)
 }
 
 func (h *Header) GetAcceptDialog() bool {
 	return h.Private()
 }
-
-//func (h *Header) RandomTurnOrder(ps ...Playerer) {
-//	for i := 0; i < h.NumPlayers; i++ {
-//		ri := sn.MyRand.Intn(h.NumPlayers)
-//		ps[i], ps[ri] = ps[ri], ps[i]
-//	}
-//	h.SetCurrentPlayerers(ps[0])
-//}
 
 func (h *Header) RandomTurnOrder() {
 	ps := h.gamer.(GetPlayerers).GetPlayerers()
@@ -69,9 +58,6 @@ func (h *Header) Accept(c *gin.Context, u *user.User) (start bool, err error) {
 	}
 
 	h.AddUser(u)
-	log.Debugf("NumPlayers: %v", h.NumPlayers)
-	log.Debugf("Users: %v", h.Users)
-
 	if len(h.Users) == h.NumPlayers {
 		start = true
 	}
