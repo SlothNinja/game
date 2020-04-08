@@ -878,6 +878,7 @@ func (h *Header) ValidateHeader() error {
 }
 
 func (h *Header) SendTurnNotificationsTo(c *gin.Context, ps ...Playerer) error {
+	return nil
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
