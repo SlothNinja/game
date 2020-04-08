@@ -81,6 +81,10 @@ func (h *Header) CTX() *gin.Context {
 	return h.c
 }
 
+func (h *Header) SetCTX(c *gin.Context) {
+	h.c = c
+}
+
 type headerer interface {
 	GetHeader() *Header
 	GetAcceptDialog() bool
