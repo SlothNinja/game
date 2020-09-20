@@ -290,39 +290,16 @@ func (h *Header) CurrentUser() *user.User {
 }
 
 func (client Client) AfterLoad(c *gin.Context, h *Header) error {
-	l := len(h.UserIDS)
-
-	ids := make([]int64, l)
-	copy(ids, h.UserIDS)
-
-	addID := true
-	cIndex := len(h.UserIDS)
-	for i, id := range ids {
-		if id == h.CreatorID {
-			addID = false
-			cIndex = i
-		}
+	h.Users = make(user.Users, len(h.UserIDS))
+	for i, id := range h.UserIDS {
+		h.Users[i] = user.New(c, id)
+		h.Users[i].Name = h.UserNames[i]
+		h.Users[i].Email = h.UserEmails[i]
 	}
 
-	if addID {
-		ids = append(ids, h.CreatorID)
-	}
-
-	l2 := len(ids)
-	us := make(user.Users, l2)
-	ks := make([]*datastore.Key, l2)
-	for i := range us {
-		us[i] = user.New(c, ids[i])
-		ks[i] = us[i].Key
-	}
-
-	err := client.DS.GetMulti(c, ks, us)
-	if err != nil {
-		return err
-	}
-
-	h.Users = us[:l]
-	h.Creator = us[cIndex]
+	h.Creator = user.New(c, h.CreatorID)
+	h.Creator.Name = h.CreatorName
+	h.Creator.Email = h.CreatorName
 	return nil
 }
 
