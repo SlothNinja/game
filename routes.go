@@ -21,26 +21,26 @@ func (client Client) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 
 	// Index
 	g1.GET("/:status",
-		gtype.SetTypes(),
+		// gtype.SetTypes(),
 		client.Index(prefix),
 	)
 
 	// JSON Data for Index
 	g1.POST("/:status/json",
-		gtype.SetTypes(),
+		// gtype.SetTypes(),
 		client.GetFiltered(gtype.All),
 		client.JSONIndexAction,
 	)
 
 	// Index
 	g1.GET("/:status/user/:uid",
-		gtype.SetTypes(),
+		// gtype.SetTypes(),
 		client.Index(prefix),
 	)
 
 	// JSON Data for Index
 	g1.POST("/:status/user/:uid/json",
-		gtype.SetTypes(),
+		// gtype.SetTypes(),
 		client.GetFiltered(gtype.All),
 		client.JSONIndexAction,
 	)
