@@ -299,12 +299,12 @@ func (h *Header) CurrentUser() *user.User {
 func (client Client) AfterLoad(c *gin.Context, h *Header) error {
 	h.Users = make(user.Users, len(h.UserIDS))
 	for i, id := range h.UserIDS {
-		h.Users[i] = user.New(c, id)
+		h.Users[i] = user.New(id)
 		h.Users[i].Name = h.UserNames[i]
 		h.Users[i].Email = h.UserEmails[i]
 	}
 
-	h.Creator = user.New(c, h.CreatorID)
+	h.Creator = user.New(h.CreatorID)
 	h.Creator.Name = h.CreatorName
 	h.Creator.Email = h.CreatorName
 	return nil

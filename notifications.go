@@ -54,7 +54,7 @@ func (client Client) DailyNotifications(c *gin.Context) {
 
 	for uid, gameInfos := range notifications {
 		m := msg
-		u := user.New(c, uid)
+		u := user.New(uid)
 
 		err := client.DS.Get(c, u.Key, u)
 		if err != nil {
