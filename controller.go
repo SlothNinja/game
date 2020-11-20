@@ -20,19 +20,23 @@ func (client Client) Index(prefix string) gin.HandlerFunc {
 		defer log.Debugf("Exiting")
 
 		gs := GamersFrom(c)
+		cu, err := user.CurrentFrom(c)
+		if err != nil {
+			log.Debugf(err.Error())
+		}
 		switch status := StatusFrom(c); status {
 		case Recruiting:
 			c.HTML(http.StatusOK, "shared/invitation_index", gin.H{
 				"Context":   c,
 				"VersionID": sn.VersionID(),
-				"CUser":     user.CurrentFrom(c),
+				"CUser":     cu,
 				"Games":     gs,
 			})
 		default:
 			c.HTML(http.StatusOK, "shared/multi_games_index", gin.H{
 				"Context":   c,
 				"VersionID": sn.VersionID(),
-				"CUser":     user.CurrentFrom(c),
+				"CUser":     cu,
 				"Games":     gs,
 				"Status":    status,
 			})
@@ -134,11 +138,12 @@ func SetAdmin(b bool) gin.HandlerFunc {
 	}
 }
 
-func (h *Header) undoKey(c *gin.Context) (k string) {
-	if cu := user.CurrentFrom(c); cu != nil {
-		k = fmt.Sprintf("%s/uid-%d", h.Key, cu.ID())
+func (h *Header) undoKey(c *gin.Context) string {
+	cu, err := user.CurrentFrom(c)
+	if err != nil || cu == nil {
+		return ""
 	}
-	return
+	return fmt.Sprintf("%s/uid-%d", h.Key, cu.ID())
 }
 
 func (h *Header) UndoKey(c *gin.Context) string {

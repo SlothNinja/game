@@ -211,7 +211,10 @@ func (h *Header) FromParams(c *gin.Context, t gtype.Type) error {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	cu := user.CurrentFrom(c)
+	cu, err := user.CurrentFrom(c)
+	if err != nil {
+		return err
+	}
 	h.Title = cu.Name + "'s Game"
 	h.Status = Recruiting
 	h.Type = t
@@ -233,7 +236,10 @@ func (h *Header) FromForm(c *gin.Context, t gtype.Type) error {
 		return err
 	}
 
-	cu := user.CurrentFrom(c)
+	cu, err := user.CurrentFrom(c)
+	if err != nil {
+		return err
+	}
 
 	h.Title = cu.Name + "'s Game"
 	if obj.Title != "" {
@@ -286,7 +292,8 @@ func (h *Header) Stat(i int) *stats.Stats {
 }
 
 func (h *Header) CurrentUser() *user.User {
-	return user.CurrentFrom(h.CTX())
+	cu, _ := user.CurrentFrom(h.CTX())
+	return cu
 }
 
 func (client Client) AfterLoad(c *gin.Context, h *Header) error {
@@ -410,7 +417,7 @@ func (h *Header) CurrentUserPlayerers() Playerers {
 	c := h.CTX()
 	var cps Playerers
 	for _, cp := range h.CurrentPlayerers() {
-		u := user.CurrentFrom(c)
+		u, _ := user.CurrentFrom(c)
 		if cp.User().Equal(u) {
 			cps = append(cps, cp)
 		} else if user.IsAdmin(c) {
@@ -559,13 +566,20 @@ func (h *Header) isCurrentPlayerOrAdmin(c *gin.Context, u *user.User) bool {
 func (h *Header) CurrentUserIsCurrentPlayerOrAdmin() bool {
 	c := h.CTX()
 	log.Warningf("CurrentUserIsCurrentPlayerOrAdmin is deprecated in favor of CUserIsCPlayerOrAdmin.")
-	cu := user.CurrentFrom(c)
+	cu, err := user.CurrentFrom(c)
+	if err != nil {
+		return false
+	}
 	return h.isCurrentPlayerOrAdmin(c, cu)
 }
 
 // CUserIsCPlayerOrAdmin returns true if current user is the current player or is an administrator.
 func (h *Header) CUserIsCPlayerOrAdmin(c *gin.Context) bool {
-	return h.isCurrentPlayerOrAdmin(c, user.CurrentFrom(c))
+	cu, err := user.CurrentFrom(c)
+	if err != nil {
+		return false
+	}
+	return h.isCurrentPlayerOrAdmin(c, cu)
 }
 
 func (h *Header) PlayerIsUser(p Playerer, u *user.User) bool {
@@ -601,7 +615,10 @@ func (h *Header) PlayerLinkByID(c *gin.Context, pid int) template.HTML {
 	i := pid % len(h.UserIDS)
 	uid := h.UserIDS[i]
 
-	cu := user.CurrentFrom(c)
+	cu, err := user.CurrentFrom(c)
+	if err != nil {
+		log.Debugf(err.Error())
+	}
 	cp := h.isCP(pid)
 
 	var me bool

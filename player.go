@@ -302,7 +302,10 @@ func (p *Player) IsCurrentUser(c *gin.Context) bool {
 	if p == nil {
 		return false
 	}
-	cu := user.CurrentFrom(c)
+	cu, err := user.CurrentFrom(c)
+	if err != nil {
+		return false
+	}
 	return p.User().Equal(cu)
 }
 
