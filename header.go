@@ -629,21 +629,22 @@ func (h *Header) PlayerLinkByID(c *gin.Context, pid int) template.HTML {
 	w := h.IsW(pid)
 	n := h.NameByPID(pid)
 
-	result := fmt.Sprintf(`<a href="/user/show/%d" >%s</a>`, uid, n)
+	path := user.PathFor(uid)
+	result := fmt.Sprintf(`<a href=%q >%s</a>`, path, n)
 	switch h.Status {
 	case Running:
 		switch {
 		case cp && me:
-			result = fmt.Sprintf(`<a href="/user/show/%d" class="current-player me">%s</a>`, uid, n)
+			result = fmt.Sprintf(`<a href=%q class="current-player me">%s</a>`, path, n)
 		case cp:
-			result = fmt.Sprintf(`<a href="/user/show/%d" class="current-player">%s</a>`, uid, n)
+			result = fmt.Sprintf(`<a href=%q class="current-player">%s</a>`, path, n)
 		}
 	case Completed:
 		switch {
 		case w && me:
-			result = fmt.Sprintf(`<a href="/user/show/%d" class="winner me">%s</a>`, uid, n)
+			result = fmt.Sprintf(`<a href=%q class="winner me">%s</a>`, path, n)
 		case w:
-			result = fmt.Sprintf(`<a href="/user/show/%d" class="winner">%s</a>`, uid, n)
+			result = fmt.Sprintf(`<a href=%q class="winner">%s</a>`, path, n)
 		}
 	}
 	return template.HTML(result)

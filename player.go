@@ -370,12 +370,12 @@ func (p *Player) Init(g Gamer) {
 
 func (p *Player) Gravatar() string {
 	return fmt.Sprintf(`<a href="/user/show/%d" ><img src=%q alt="Gravatar" class="%s-border" /> </a>`,
-		p.User().ID, p.User().Gravatar(), p.Color())
+		p.User().ID, p.User().Gravatar("80"), p.Color())
 }
 
 func (h *Header) GravatarFor(p Playerer) template.HTML {
 	return template.HTML(fmt.Sprintf(`<a href=%q ><img src=%q alt="Gravatar" class="%s-border" /> </a>`,
-		h.UserPathFor(p), user.GravatarURL(h.EmailFor(p)), p.Color()))
+		h.UserPathFor(p), user.GravatarURL(h.EmailFor(p), "monsterid", "80"), p.Color()))
 }
 
 func (h *Header) UserPathFor(p Playerer) template.HTML {
