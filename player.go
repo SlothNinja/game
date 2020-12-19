@@ -195,6 +195,14 @@ func (h *Header) EmailFor(p Playerer) (em string) {
 	return
 }
 
+func (h *Header) GravTypeFor(p Playerer) string {
+	l, pid := len(h.UserGravTypes), p.ID()
+	if pid >= 0 && pid < l {
+		return h.UserGravTypes[p.ID()]
+	}
+	return ""
+}
+
 // func (p *Player) Rating() *rating.CurrentRating {
 // 	if p.rating != nil {
 // 		return p.rating
@@ -375,7 +383,7 @@ func (p *Player) Gravatar() string {
 
 func (h *Header) GravatarFor(p Playerer) template.HTML {
 	return template.HTML(fmt.Sprintf(`<a href=%q ><img src=%q alt="Gravatar" class="%s-border" /> </a>`,
-		h.UserPathFor(p), user.GravatarURL(h.EmailFor(p), "monsterid", "80"), p.Color()))
+		h.UserPathFor(p), user.GravatarURL(h.EmailFor(p), "80", h.GravTypeFor(p)), p.Color()))
 }
 
 func (h *Header) UserPathFor(p Playerer) template.HTML {

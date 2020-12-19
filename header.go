@@ -46,6 +46,7 @@ type Header struct {
 	UserSIDS      []string    `form:"user-sids" json:"userSIds"`
 	UserNames     []string    `form:"user-names" json:"userNames"`
 	UserEmails    []string    `form:"user-emails" json:"userEmails"`
+	UserGravTypes []string    `form:"user-grav-types" json:"userGravTypes"`
 	OrderIDS      UserIndices `form:"order-ids" json:"-"`
 	CPUserIndices UserIndices `form:"cp-user-indices" json:"cpUserIndices"`
 	WinnerIDS     UserIndices `form:"winner-ids" json:"winnerIndices"`
