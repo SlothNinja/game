@@ -3,16 +3,19 @@ package game
 import (
 	"cloud.google.com/go/datastore"
 	gtype "github.com/SlothNinja/type"
+	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 )
 
 type Client struct {
-	DS *datastore.Client
+	User user.Client
+	DS   *datastore.Client
 }
 
-func NewClient(dsClient *datastore.Client) Client {
+func NewClient(userClient user.Client, dsClient *datastore.Client) Client {
 	return Client{
-		DS: dsClient,
+		User: userClient,
+		DS:   dsClient,
 	}
 }
 

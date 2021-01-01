@@ -96,7 +96,7 @@ type headerer interface {
 	Winnerers() Playerers
 	User(int) *user.User
 	Stat(int) *stats.Stats
-	CurrentPlayerers() Playerers
+	CurrentPlayerers() []Playerer
 	NextPlayerer(...Playerer) Playerer
 	DefaultColorMap() color.Colors
 	UserLinks() template.HTML
@@ -105,7 +105,6 @@ type headerer interface {
 	CanDropout(*user.User) bool
 	Stub() string
 	CTX() *gin.Context
-	CurrentUser() *user.User
 	Accept(*gin.Context, *user.User) (bool, error)
 	Drop(*user.User) error
 	IsCurrentPlayer(*user.User) bool
@@ -208,21 +207,21 @@ func actionPath(r *http.Request) string {
 	return s[len(s)-1]
 }
 
-func (h *Header) FromParams(c *gin.Context, t gtype.Type) error {
+func (h *Header) FromParams(c *gin.Context, cu *user.User, t gtype.Type) error {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	cu, err := user.CurrentFrom(c)
-	if err != nil {
-		return err
-	}
+	// cu, err := user.CurrentFrom(c)
+	// if err != nil {
+	// 	return err
+	// }
 	h.Title = cu.Name + "'s Game"
 	h.Status = Recruiting
 	h.Type = t
 	return nil
 }
 
-func (h *Header) FromForm(c *gin.Context, t gtype.Type) error {
+func (h *Header) FromForm(c *gin.Context, cu *user.User, t gtype.Type) error {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
@@ -237,10 +236,10 @@ func (h *Header) FromForm(c *gin.Context, t gtype.Type) error {
 		return err
 	}
 
-	cu, err := user.CurrentFrom(c)
-	if err != nil {
-		return err
-	}
+	// cu, err := user.CurrentFrom(c)
+	// if err != nil {
+	// 	return err
+	// }
 
 	h.Title = cu.Name + "'s Game"
 	if obj.Title != "" {
@@ -292,10 +291,10 @@ func (h *Header) Stat(i int) *stats.Stats {
 	}
 }
 
-func (h *Header) CurrentUser() *user.User {
-	cu, _ := user.CurrentFrom(h.CTX())
-	return cu
-}
+// func (h *Header) CurrentUser() *user.User {
+// 	cu, _ := user.CurrentFrom(h.CTX())
+// 	return cu
+// }
 
 func (client Client) AfterLoad(c *gin.Context, h *Header) error {
 	h.Users = make(user.Users, len(h.UserIDS))
@@ -379,19 +378,15 @@ func (h *Header) AddUsers(us ...*user.User) {
 	h.updateUserFields()
 }
 
-func (h *Header) IsAdmin() bool {
-	return user.IsAdmin(h.CTX())
-}
+// func (h *Header) IsAdmin() bool {
+// 	return user.IsAdmin(h.CTX())
+// }
 
 func (h *Header) CurrentPlayerer() Playerer {
-	switch cps := h.CurrentPlayerers(); len(cps) {
-	case 0:
-		return nil
-	case 1:
-		return cps[0]
-	default:
-		return h.CurrentUserPlayerer()
+	if len(h.CurrentPlayerers()) == 1 {
+		return h.CurrentPlayerers()[0]
 	}
+	return nil
 }
 
 // CurrentPlayererFrom provides the first current player from players ps.
@@ -402,8 +397,8 @@ func (h *Header) CurrentPlayerFrom(ps Playerers) (cp Playerer) {
 	return
 }
 
-func (h *Header) CurrentUserPlayerer() Playerer {
-	switch cps := h.CurrentUserPlayerers(); len(cps) {
+func (h *Header) CurrentUserPlayerer(cu *user.User) Playerer {
+	switch cps := h.CurrentUserPlayerers(cu); len(cps) {
 	case 0:
 		return nil
 	case 1:
@@ -414,18 +409,24 @@ func (h *Header) CurrentUserPlayerer() Playerer {
 	}
 }
 
-func (h *Header) CurrentUserPlayerers() Playerers {
-	c := h.CTX()
-	var cps Playerers
+func isAdmin(u *user.User) bool {
+	if u == nil {
+		return false
+	}
+	return u.Admin
+}
+
+func (h *Header) CurrentUserPlayerers(cu *user.User) Playerers {
+	if cu == nil {
+		return nil
+	}
+
 	for _, cp := range h.CurrentPlayerers() {
-		u, _ := user.CurrentFrom(c)
-		if cp.User().Equal(u) {
-			cps = append(cps, cp)
-		} else if user.IsAdmin(c) {
-			return append(cps, cp)
+		if isAdmin(cu) || cp.User().Equal(cu) {
+			return Playerers{cp}
 		}
 	}
-	return cps
+	return nil
 }
 
 // CurrentPlayererFor returns the current player from players ps associated with the user u.
@@ -442,22 +443,27 @@ func (h *Header) CurrentPlayerFor(ps Playerers, u *user.User) (cp Playerer) {
 		}
 	}
 
-	if u.IsAdmin() {
+	if isAdmin(u) {
 		cp = h.CurrentPlayerFrom(ps)
 	}
 	return
 }
 
-func (h *Header) CurrentPlayerers() Playerers {
+func (h *Header) CurrentPlayerers() []Playerer {
 	if h.Status == Completed {
 		return nil
 	}
 
-	var playerers Playerers
-	for _, index := range h.CPUserIndices {
-		playerers = append(playerers, h.PlayerByUserIndex(index))
+	l := len(h.CPUserIndices)
+	if l == 0 {
+		return nil
 	}
-	return playerers
+
+	ps := make([]Playerer, l)
+	for i, index := range h.CPUserIndices {
+		ps[i] = h.PlayerByUserIndex(index)
+	}
+	return ps
 }
 
 // CurrentPlayerers returns the current players in players.
@@ -472,7 +478,7 @@ func (h *Header) CurrentPlayersFrom(players Playerers) (ps Playerers) {
 
 // ps is an optional parameter.
 // If no player is provided, assume current player.
-func (h *Header) NextPlayerer(ps ...Playerer) (p Playerer) {
+func (h *Header) NextPlayerer(ps ...Playerer) Playerer {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
@@ -481,8 +487,7 @@ func (h *Header) NextPlayerer(ps ...Playerer) (p Playerer) {
 	if len(ps) == 1 {
 		i = ps[0].Index() + 1
 	}
-	p = h.PlayererByIndex(i)
-	return
+	return h.PlayererByIndex(i)
 }
 
 // ps is an optional parameter.
@@ -555,33 +560,25 @@ func (h *Header) IsCurrentPlayer(u *user.User) bool {
 
 // IsCurrentPlayer returns ture if the user is the current player or an admin.
 func (h *Header) IsCurrentPlayerOrAdmin(u *user.User) bool {
-	return u != nil && (u.IsAdmin() || h.IsCurrentPlayer(u))
+	return u != nil && (isAdmin(u) || h.IsCurrentPlayer(u))
 }
 
 func (h *Header) isCurrentPlayerOrAdmin(c *gin.Context, u *user.User) bool {
-	return u != nil && (user.IsAdmin(c) || h.IsCurrentPlayer(u))
+	return u != nil && (isAdmin(u) || h.IsCurrentPlayer(u))
 }
 
 // CurrentUserIsCurrentPlayerOrAdmin returns true if current user is the current player or is an administrator.
 // Deprecated in favor of CUserIsCPlayerOrAdmin
-func (h *Header) CurrentUserIsCurrentPlayerOrAdmin() bool {
+func (h *Header) CurrentUserIsCurrentPlayerOrAdmin(cu *user.User) bool {
 	c := h.CTX()
 	log.Warningf("CurrentUserIsCurrentPlayerOrAdmin is deprecated in favor of CUserIsCPlayerOrAdmin.")
-	cu, err := user.CurrentFrom(c)
-	if err != nil {
-		return false
-	}
 	return h.isCurrentPlayerOrAdmin(c, cu)
 }
 
-// CUserIsCPlayerOrAdmin returns true if current user is the current player or is an administrator.
-func (h *Header) CUserIsCPlayerOrAdmin(c *gin.Context) bool {
-	cu, err := user.CurrentFrom(c)
-	if err != nil {
-		return false
-	}
-	return h.isCurrentPlayerOrAdmin(c, cu)
-}
+// // CUserIsCPlayerOrAdmin returns true if current user is the current player or is an administrator.
+// func (h *Header) CUserIsCPlayerOrAdmin(c *gin.Context, cu *user.User) bool {
+// 	return h.isCurrentPlayerOrAdmin(c, cu)
+// }
 
 func (h *Header) PlayerIsUser(p Playerer, u *user.User) bool {
 	return p != nil && u != nil && h.UserIDFor(p) == u.ID()
@@ -612,14 +609,10 @@ func (h *Header) UserLinkFor(uid int64) template.HTML {
 	return user.LinkFor(uid, h.NameByUID(uid))
 }
 
-func (h *Header) PlayerLinkByID(c *gin.Context, pid int) template.HTML {
+func (h *Header) PlayerLinkByID(cu *user.User, pid int) template.HTML {
 	i := pid % len(h.UserIDS)
 	uid := h.UserIDS[i]
 
-	cu, err := user.CurrentFrom(c)
-	if err != nil {
-		log.Debugf(err.Error())
-	}
 	cp := h.isCP(pid)
 
 	var me bool
@@ -651,19 +644,19 @@ func (h *Header) PlayerLinkByID(c *gin.Context, pid int) template.HTML {
 	return template.HTML(result)
 }
 
-func (h *Header) PlayerLinks(c *gin.Context) template.HTML {
+func (h *Header) PlayerLinks(cu *user.User) template.HTML {
 	if h.Status == Recruiting {
 		return h.UserLinks()
 	}
 
 	links := make([]string, len(h.OrderIDS))
 	for i, index := range h.OrderIDS {
-		links[i] = string(h.PlayerLinkByID(c, index))
+		links[i] = string(h.PlayerLinkByID(cu, index))
 	}
 	return template.HTML(restful.ToSentence(links))
 }
 
-func (h *Header) CurrentPlayerLinks(c *gin.Context) template.HTML {
+func (h *Header) CurrentPlayerLinks(cu *user.User) template.HTML {
 	cps := h.CPUserIndices
 	if len(cps) == 0 || h.Status != Running {
 		return "None"
@@ -671,7 +664,7 @@ func (h *Header) CurrentPlayerLinks(c *gin.Context) template.HTML {
 
 	links := make([]string, len(cps))
 	for j, i := range cps {
-		links[j] = string(h.PlayerLinkByID(c, i))
+		links[j] = string(h.PlayerLinkByID(cu, i))
 	}
 	return template.HTML(restful.ToSentence(links))
 }

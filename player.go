@@ -10,7 +10,6 @@ import (
 	"github.com/SlothNinja/rating"
 	"github.com/SlothNinja/user"
 	stats "github.com/SlothNinja/user-stats"
-	"github.com/gin-gonic/gin"
 )
 
 func init() {
@@ -263,11 +262,11 @@ func (p *Player) Color() color.Color {
 		return color.None
 	}
 	colorMap := p.gamer.DefaultColorMap()
-	if cu := p.gamer.CurrentUser(); cu != nil {
-		if player := p.gamer.PlayererByUserID(cu.ID()); player != nil {
-			colorMap = player.ColorMap()
-		}
-	}
+	// if cu != nil {
+	// 	if player := p.gamer.PlayererByUserID(cu.ID()); player != nil {
+	// 		colorMap = player.ColorMap()
+	// 	}
+	// }
 	return colorMap[p.ID()]
 }
 
@@ -306,12 +305,8 @@ func (p *Player) TextColor() (c color.Color) {
 
 // A bit of a misnomer
 // Returns whether the current user is the same as the player's user
-func (p *Player) IsCurrentUser(c *gin.Context) bool {
+func (p *Player) IsCurrentUser(cu *user.User) bool {
 	if p == nil {
-		return false
-	}
-	cu, err := user.CurrentFrom(c)
-	if err != nil {
 		return false
 	}
 	return p.User().Equal(cu)

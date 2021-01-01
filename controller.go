@@ -20,7 +20,7 @@ func (client Client) Index(prefix string) gin.HandlerFunc {
 		defer log.Debugf("Exiting")
 
 		gs := GamersFrom(c)
-		cu, err := user.CurrentFrom(c)
+		cu, err := client.User.Current(c)
 		if err != nil {
 			log.Debugf(err.Error())
 		}
@@ -71,29 +71,29 @@ type Action struct {
 	Type ActionType
 }
 
-func NotCurrentPlayerOrAdmin(prefix string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		switch g := GamerFrom(c); {
-		case g == nil:
-			restful.AddErrorf(c, "Did not load game from database.")
-			c.Redirect(http.StatusSeeOther, homePath)
-		case g.GetHeader().CUserIsCPlayerOrAdmin(c):
-			c.Redirect(http.StatusSeeOther, showPath(c, prefix, c.Param("gid")))
-		}
-	}
-}
+// func NotCurrentPlayerOrAdmin(prefix string) gin.HandlerFunc {
+// 	return func(c *gin.Context) {
+// 		switch g := GamerFrom(c); {
+// 		case g == nil:
+// 			restful.AddErrorf(c, "Did not load game from database.")
+// 			c.Redirect(http.StatusSeeOther, homePath)
+// 		case g.GetHeader().CUserIsCPlayerOrAdmin(c):
+// 			c.Redirect(http.StatusSeeOther, showPath(c, prefix, c.Param("gid")))
+// 		}
+// 	}
+// }
 
-func CurrentPlayerOrAdmin(prefix, idParam string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		switch g := GamerFrom(c); {
-		case g == nil:
-			restful.AddErrorf(c, "Did not load game from database.")
-			c.Redirect(http.StatusSeeOther, homePath)
-		case !g.GetHeader().CUserIsCPlayerOrAdmin(c):
-			c.Redirect(http.StatusSeeOther, showPath(c, prefix, c.Param(idParam)))
-		}
-	}
-}
+// func CurrentPlayerOrAdmin(prefix, idParam string) gin.HandlerFunc {
+// 	return func(c *gin.Context) {
+// 		switch g := GamerFrom(c); {
+// 		case g == nil:
+// 			restful.AddErrorf(c, "Did not load game from database.")
+// 			c.Redirect(http.StatusSeeOther, homePath)
+// 		case !g.GetHeader().CUserIsCPlayerOrAdmin(c):
+// 			c.Redirect(http.StatusSeeOther, showPath(c, prefix, c.Param(idParam)))
+// 		}
+// 	}
+// }
 
 func showPath(c *gin.Context, prefix, id string) string {
 	return fmt.Sprintf("/%s/game/%s/show", prefix, id)
@@ -138,16 +138,12 @@ func SetAdmin(b bool) gin.HandlerFunc {
 	}
 }
 
-func (h *Header) undoKey(c *gin.Context) string {
-	cu, err := user.CurrentFrom(c)
-	if err != nil || cu == nil {
-		return ""
-	}
+func (h *Header) undoKey(c *gin.Context, cu *user.User) string {
 	return fmt.Sprintf("%s/uid-%d", h.Key, cu.ID())
 }
 
-func (h *Header) UndoKey(c *gin.Context) string {
-	return h.undoKey(c)
+func (h *Header) UndoKey(c *gin.Context, cu *user.User) string {
+	return h.undoKey(c, cu)
 }
 
 type jGamesIndex struct {
@@ -178,7 +174,13 @@ func (client Client) JSONIndexAction(c *gin.Context) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	data, err := toGameTable(c)
+	cu, err := client.User.Current(c)
+	if err != nil {
+		c.JSON(http.StatusOK, fmt.Sprintf("%v", err))
+		return
+	}
+
+	data, err := toGameTable(c, cu)
 	if err != nil {
 		c.JSON(http.StatusOK, fmt.Sprintf("%v", err))
 		return
@@ -186,7 +188,7 @@ func (client Client) JSONIndexAction(c *gin.Context) {
 	c.JSON(http.StatusOK, data)
 }
 
-func toGameTable(c *gin.Context) (*jGamesIndex, error) {
+func toGameTable(c *gin.Context, cu *user.User) (*jGamesIndex, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
@@ -201,7 +203,7 @@ func toGameTable(c *gin.Context) (*jGamesIndex, error) {
 			Type:        template.HTML(h.Type.String()),
 			Title:       titleLink(g),
 			Creator:     user.LinkFor(h.CreatorID, h.CreatorName),
-			Players:     h.PlayerLinks(c),
+			Players:     h.PlayerLinks(cu),
 			NumPlayers:  template.HTML(fmt.Sprintf("%d / %d", h.AcceptedPlayers(), h.NumPlayers)),
 			Round:       h.Round,
 			OptString:   template.HTML(h.OptString),
@@ -209,7 +211,7 @@ func toGameTable(c *gin.Context) (*jGamesIndex, error) {
 			UpdatedAt:   h.UpdatedAt,
 			LastUpdated: template.HTML(restful.LastUpdated(time.Time(h.UpdatedAt))),
 			Public:      publicPrivate(g),
-			Actions:     actionButtons(c, g),
+			Actions:     actionButtons(c, cu, g),
 			Status:      h.Status,
 		}
 	}
@@ -240,7 +242,7 @@ func titleLink(g Gamer) template.HTML {
 		<div style="font-size:.7em">%s</div>`, h.Type.IDString(), h.ID(), h.Title, h.OptString))
 }
 
-func actionButtons(c *gin.Context, g Gamer) template.HTML {
+func actionButtons(c *gin.Context, cu *user.User, g Gamer) template.HTML {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
@@ -248,14 +250,14 @@ func actionButtons(c *gin.Context, g Gamer) template.HTML {
 	switch h.Status {
 	case Running:
 		t := h.Type.IDString()
-		if g.GetHeader().CUserIsCPlayerOrAdmin(c) {
+		if g.GetHeader().IsCurrentPlayer(cu) {
 			return template.HTML(fmt.Sprintf(`<a class="mybutton" href="/%s/game/show/%d">Play</a>`, t, h.ID()))
 		} else {
 			return template.HTML(fmt.Sprintf(`<a class="mybutton" href="/%s/game/show/%d">Show</a>`, t, h.ID()))
 		}
 	case Recruiting:
 		t := h.Type.IDString()
-		switch cu := g.CurrentUser(); {
+		switch {
 		case g.CanAdd(cu):
 			if g.Private() {
 				return template.HTML(fmt.Sprintf(`
