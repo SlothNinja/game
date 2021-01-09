@@ -47,8 +47,6 @@ type jPlayer struct {
 	Score           int                   `json:"score"`
 	Passed          bool                  `json:"passed"`
 	ColorMap        []string              `json:"colorMap"`
-	//	Link            string                `json:"link"`
-	//Gravatar string `json:"gravatar"`
 }
 
 func (p *Player) MarshalJSON() ([]byte, error) {
@@ -59,9 +57,7 @@ func (p *Player) MarshalJSON() ([]byte, error) {
 		PerformedAction: p.PerformedAction,
 		Score:           p.Score,
 		Passed:          p.Passed,
-		ColorMap:        p.gamer.(GetPlayerers).GetPlayerers().Colors().Strings(),
-		//		Link:            string(p.Link()),
-		// Gravatar: p.Gravatar(),
+		ColorMap:        p.ColorMap().Strings(),
 	}
 	return json.Marshal(j)
 }
@@ -73,8 +69,6 @@ type Playerer interface {
 	Name() string
 	Color() color.Color
 	ColorMap() color.Colors
-	// Init(Gamer)
-	// Rating() *rating.CurrentRating
 	Stats() *stats.Stats
 }
 

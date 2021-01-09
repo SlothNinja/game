@@ -185,10 +185,9 @@ func (h *Header) ColorMapFor(u *user.User) color.Map {
 			cm = p.ColorMap()
 		}
 	}
-	ps := h.gamer.(GetPlayerers).GetPlayerers()
-	cMap := make(color.Map, len(ps))
-	for i, u2 := range h.Users {
-		cMap[int(u2.ID())] = cm[i]
+	cMap := make(color.Map, len(h.UserIDS))
+	for i, uid := range h.UserIDS {
+		cMap[int(uid)] = cm[i]
 	}
 	return cMap
 }
