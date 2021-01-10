@@ -866,9 +866,13 @@ func (h *Header) ValidateHeader() error {
 }
 
 func (h *Header) SendTurnNotificationsTo(c *gin.Context, ps ...Playerer) error {
-	return nil
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
+
+	// Re-enabled turn notifications for all games but indonesia
+	if h.Type == gtype.Indonesia {
+		return nil
+	}
 
 	subject := fmt.Sprintf("It's your turn in %s (%s #%d).", h.Type, h.Title, h.ID())
 	url := fmt.Sprintf(`<a href="http://www.slothninja.com/%s/game/show/%d">here</a>`, h.Type.Prefix(), h.ID())
