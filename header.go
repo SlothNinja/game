@@ -1,6 +1,7 @@
 package game
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -865,6 +866,40 @@ func (h *Header) ValidateHeader() error {
 	return nil
 }
 
+func (h *Header) notificationFor(c *gin.Context, p Playerer) (mailjet.InfoMessagesV31, error) {
+	log.Debugf("Entering")
+	defer log.Debugf("Exiting")
+
+	gInfo := inf{GameID: h.ID(), Type: h.Type, Title: h.Title}
+	buf := new(bytes.Buffer)
+
+	msg := mailjet.InfoMessagesV31{
+		From: &mailjet.RecipientV31{
+			Email: "webmaster@slothninja.com",
+			Name:  "Webmaster",
+		},
+	}
+
+	tmpl := restful.TemplatesFrom(c)["shared/turn_notification"]
+
+	msg.Subject = fmt.Sprintf("SlothNinja Games: It's your turn in %s (%d)", gInfo.Title, gInfo.GameID)
+
+	err := tmpl.Execute(buf, gin.H{"Game": gInfo})
+	if err != nil {
+		return msg, err
+	}
+
+	u := p.User()
+	msg.HTMLPart = buf.String()
+	msg.To = &mailjet.RecipientsV31{
+		mailjet.RecipientV31{
+			Email: u.Email,
+			Name:  u.Name,
+		},
+	}
+	return msg, nil
+}
+
 func (h *Header) SendTurnNotificationsTo(c *gin.Context, ps ...Playerer) error {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
@@ -874,45 +909,41 @@ func (h *Header) SendTurnNotificationsTo(c *gin.Context, ps ...Playerer) error {
 		return nil
 	}
 
-	subject := fmt.Sprintf("It's your turn in %s (%s #%d).", h.Type, h.Title, h.ID())
-	url := fmt.Sprintf(`<a href="http://www.slothninja.com/%s/game/show/%d">here</a>`, h.Type.Prefix(), h.ID())
-	body := fmt.Sprintf(`<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-		<html>
-			<head>
-				<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
-			</head>
-			<body bgcolor="#ffffff" text="#000000">
-				<p>%s</p>
-				<p>You can take your turn %s.</p>
-			</body>
-		</html>`, subject, url)
-
-	msgInfo := mailjet.InfoMessagesV31{
-		From: &mailjet.RecipientV31{
-			Email: "webmaster@slothninja.com",
-			Name:  "Webmaster",
-		},
-		Subject:  subject,
-		HTMLPart: body,
+	l := len(ps)
+	if l == 0 {
+		return nil
 	}
 
-	msgInfos := []mailjet.InfoMessagesV31{}
+	if l == 1 {
+		msg, err := h.notificationFor(c, ps[0])
+		if err != nil {
+			return err
+		}
 
-	for _, p := range ps {
-		u := p.User()
-		if u.EmailNotifications {
-			m := msgInfo
-			m.To = &mailjet.RecipientsV31{
-				mailjet.RecipientV31{
-					Email: u.Email,
-					Name:  u.Name,
-				},
-			}
-			msgInfos = append(msgInfos, m)
+		_, err = send.Messages(c, msg)
+		return err
+	}
+
+	isNil := true
+	me := make(datastore.MultiError, l)
+	for i, p := range ps {
+		msg, err := h.notificationFor(c, p)
+		me[i] = err
+		if err != nil {
+			isNil = false
+			continue
+		}
+		_, err = send.Messages(c, msg)
+		me[i] = err
+		if err != nil {
+			isNil = false
 		}
 	}
-	_, err := send.Messages(c, msgInfos...)
-	return err
+
+	if isNil {
+		return nil
+	}
+	return me
 }
 
 func (h Header) indexFor(u *user.User) (i int) {
