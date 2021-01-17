@@ -3,7 +3,6 @@ package game
 import (
 	"bytes"
 
-	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/send"
 	gType "github.com/SlothNinja/type"
@@ -27,8 +26,8 @@ type infs []*inf
 type notifications map[int64]infs
 
 func (client Client) DailyNotifications(c *gin.Context) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	client.Log.Debugf("Entering")
+	defer client.Log.Debugf("Exiting")
 
 	gs := GamersFrom(c)
 
@@ -58,7 +57,7 @@ func (client Client) DailyNotifications(c *gin.Context) {
 
 		err := client.DS.Get(c, u.Key, u)
 		if err != nil {
-			log.Errorf("get user error: %s", err.Error())
+			client.Log.Errorf("get user error: %s", err.Error())
 			buf.Reset()
 			continue
 		}
@@ -68,7 +67,7 @@ func (client Client) DailyNotifications(c *gin.Context) {
 			"User": u,
 		})
 		if err != nil {
-			log.Errorf("template execution for %s generated error: %s", u.Name, err.Error())
+			client.Log.Errorf("template execution for %s generated error: %s", u.Name, err.Error())
 			buf.Reset()
 			continue
 		}
@@ -83,7 +82,7 @@ func (client Client) DailyNotifications(c *gin.Context) {
 
 		_, err = send.Messages(c, m)
 		if err != nil {
-			log.Errorf("enqueuing email message: %#v geneerated error: %s", m, err.Error())
+			client.Log.Errorf("enqueuing email message: %#v geneerated error: %s", m, err.Error())
 			buf.Reset()
 			continue
 		}

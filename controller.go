@@ -16,13 +16,13 @@ import (
 
 func (client Client) Index(prefix string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		log.Debugf("Entering")
-		defer log.Debugf("Exiting")
+		client.Log.Debugf("Entering")
+		defer client.Log.Debugf("Exiting")
 
 		gs := GamersFrom(c)
 		cu, err := client.User.Current(c)
 		if err != nil {
-			log.Debugf(err.Error())
+			client.Log.Debugf(err.Error())
 		}
 		switch status := StatusFrom(c); status {
 		case Recruiting:
@@ -171,8 +171,8 @@ type jHeader struct {
 }
 
 func (client Client) JSONIndexAction(c *gin.Context) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	client.Log.Debugf("Entering")
+	defer client.Log.Debugf("Exiting")
 
 	cu, err := client.User.Current(c)
 	if err != nil {

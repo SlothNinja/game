@@ -23,8 +23,8 @@ func getAllQuery(c *gin.Context) *datastore.Query {
 }
 
 func (client Client) getFiltered(c *gin.Context, status, sid, start, length string, t gtype.Type) (Gamers, int64, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	client.Log.Debugf("Entering")
+	defer client.Log.Debugf("Exiting")
 
 	q := getAllQuery(c).
 		KeysOnly()
@@ -134,13 +134,13 @@ func countFrom(c *gin.Context) (cnt int64) {
 
 func (client Client) GetFiltered(t gtype.Type) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		log.Debugf("Entering")
-		defer log.Debugf("Exiting")
+		client.Log.Debugf("Entering")
+		defer client.Log.Debugf("Exiting")
 
 		gs, cnt, err := client.getFiltered(c, c.Param("status"), c.Param("uid"), c.PostForm("start"), c.PostForm("length"), t)
 
 		if err != nil {
-			log.Errorf(err.Error())
+			client.Log.Errorf(err.Error())
 			c.Redirect(http.StatusSeeOther, homePath)
 			c.Abort()
 		}
@@ -149,13 +149,13 @@ func (client Client) GetFiltered(t gtype.Type) gin.HandlerFunc {
 }
 
 func (client Client) GetRunning(c *gin.Context) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	client.Log.Debugf("Entering")
+	defer client.Log.Debugf("Exiting")
 
 	gs, cnt, err := client.getFiltered(c, c.Param("status"), "", "", "", gtype.All)
 
 	if err != nil {
-		log.Errorf(err.Error())
+		client.Log.Errorf(err.Error())
 		c.Redirect(http.StatusSeeOther, homePath)
 		c.Abort()
 	}

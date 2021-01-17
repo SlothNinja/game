@@ -2,25 +2,30 @@ package game
 
 import (
 	"cloud.google.com/go/datastore"
+	"github.com/SlothNinja/log"
+	"github.com/SlothNinja/sn"
 	gtype "github.com/SlothNinja/type"
 	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
+	"github.com/patrickmn/go-cache"
 )
 
 type Client struct {
-	User user.Client
-	DS   *datastore.Client
+	*sn.Client
+	User *user.Client
 }
 
-func NewClient(userClient user.Client, dsClient *datastore.Client) Client {
-	return Client{
-		User: userClient,
-		DS:   dsClient,
+func NewClient(userClient *user.Client, dsClient *datastore.Client, logger *log.Logger, mcache *cache.Cache, router *gin.Engine, prefix string) *Client {
+	cl := &Client{
+		Client: sn.NewClient(dsClient, logger, mcache, router),
+		User:   userClient,
 	}
+	cl.addRoutes(prefix)
+	return cl
 }
 
-func (client Client) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
-	g1 := engine.Group(prefix)
+func (client *Client) addRoutes(prefix string) {
+	g1 := client.Router.Group(prefix)
 
 	// Index
 	g1.GET("/:status",
@@ -53,5 +58,4 @@ func (client Client) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 		client.DailyNotifications,
 	)
 
-	return engine
 }
