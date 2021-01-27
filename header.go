@@ -17,7 +17,6 @@ import (
 	"github.com/SlothNinja/send"
 	gtype "github.com/SlothNinja/type"
 	"github.com/SlothNinja/user"
-	stats "github.com/SlothNinja/user-stats"
 	"github.com/gin-gonic/gin"
 	"github.com/mailjet/mailjet-apiv3-go"
 )
@@ -29,7 +28,6 @@ type Header struct {
 
 	Creator *user.User     `datastore:"-" json:"-"`
 	Users   user.Users     `datastore:"-" json:"users"`
-	Stats   []*stats.Stats `datastore:"-" json:"-"`
 	Key     *datastore.Key `datastore:"__key__"`
 
 	Type          gtype.Type  `json:"type"`
@@ -96,7 +94,6 @@ type headerer interface {
 	PlayererByIndex(int) Playerer
 	Winnerers() Playerers
 	User(int) *user.User
-	Stat(int) *stats.Stats
 	CurrentPlayerers() []Playerer
 	NextPlayerer(...Playerer) Playerer
 	DefaultColorMap() color.Colors
@@ -283,20 +280,12 @@ func (h *Header) User(index int) *user.User {
 	return h.Users[i]
 }
 
-func (h *Header) Stat(i int) *stats.Stats {
-	if l := len(h.Stats); l == 0 {
-		return nil
-	} else {
-		return h.Stats[i%l]
-	}
+func (client *Client) AfterLoad(c *gin.Context, h *Header) error {
+	h.AfterLoad()
+	return nil
 }
 
-// func (h *Header) CurrentUser() *user.User {
-// 	cu, _ := user.CurrentFrom(h.CTX())
-// 	return cu
-// }
-
-func (client Client) AfterLoad(c *gin.Context, h *Header) error {
+func (h *Header) AfterLoad() {
 	h.Users = make(user.Users, len(h.UserIDS))
 	for i, id := range h.UserIDS {
 		h.Users[i] = user.New(id)
@@ -307,7 +296,6 @@ func (client Client) AfterLoad(c *gin.Context, h *Header) error {
 	h.Creator = user.New(h.CreatorID)
 	h.Creator.Name = h.CreatorName
 	h.Creator.Email = h.CreatorName
-	return nil
 }
 
 func include(ints []int64, i int64) bool {

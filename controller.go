@@ -138,12 +138,12 @@ func SetAdmin(b bool) gin.HandlerFunc {
 	}
 }
 
-func (h *Header) undoKey(c *gin.Context, cu *user.User) string {
+func (h *Header) undoKey(cu *user.User) string {
 	return fmt.Sprintf("%s/uid-%d", h.Key, cu.ID())
 }
 
-func (h *Header) UndoKey(c *gin.Context, cu *user.User) string {
-	return h.undoKey(c, cu)
+func (h *Header) UndoKey(cu *user.User) string {
+	return h.undoKey(cu)
 }
 
 type jGamesIndex struct {
@@ -224,6 +224,10 @@ func toGameTable(c *gin.Context, cu *user.User) (*jGamesIndex, error) {
 	table.RecordsTotal = countFrom(c)
 	table.RecordsFiltered = countFrom(c)
 	return table, nil
+}
+
+func ToGameTable(c *gin.Context, gs []Gamer, cnt int64, cu *user.User) (*jGamesIndex, error) {
+	return toGameTable(withCount(withGamers(c, gs), cnt), cu)
 }
 
 func publicPrivate(g Gamer) template.HTML {

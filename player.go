@@ -9,7 +9,6 @@ import (
 	"github.com/SlothNinja/color"
 	"github.com/SlothNinja/rating"
 	"github.com/SlothNinja/user"
-	stats "github.com/SlothNinja/user-stats"
 )
 
 func init() {
@@ -30,7 +29,6 @@ type Player struct {
 	gamer           Gamer
 	user            *user.User
 	rating          *rating.CurrentRating
-	stats           *stats.Stats
 	IDF             int  `form:"idf"`
 	PerformedAction bool `form:"performed-action"`
 	Score           int  `form:"score"`
@@ -69,7 +67,6 @@ type Playerer interface {
 	Name() string
 	Color() color.Color
 	ColorMap() color.Colors
-	Stats() *stats.Stats
 }
 
 func (p *Player) CompareByScore(p2 *Player) (c Comparison) {
@@ -194,30 +191,6 @@ func (h *Header) GravTypeFor(p Playerer) string {
 		return h.UserGravTypes[p.ID()]
 	}
 	return ""
-}
-
-// func (p *Player) Rating() *rating.CurrentRating {
-// 	if p.rating != nil {
-// 		return p.rating
-// 	}
-//
-// 	c := p.User().CTX()
-// 	dsClient, err := datastore.NewClient(c, "")
-// 	if err != nil {
-// 		log.Warningf("unable to open datastore client")
-// 	}
-//
-// 	client := rating.NewClient(dsClient)
-// 	p.rating, _ = client.For(c, p.User(), p.Game().GetHeader().Type)
-// 	return p.rating
-// }
-
-func (p *Player) Stats() *stats.Stats {
-	if p.stats != nil {
-		return p.stats
-	}
-	p.stats = p.gamer.Stat(p.ID())
-	return p.stats
 }
 
 // Name provides the name of the player.

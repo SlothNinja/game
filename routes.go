@@ -15,16 +15,15 @@ type Client struct {
 	User *user.Client
 }
 
-func NewClient(userClient *user.Client, dsClient *datastore.Client, logger *log.Logger, mcache *cache.Cache, router *gin.Engine, prefix string) *Client {
+func NewClient(dsClient *datastore.Client, userClient *user.Client, logger *log.Logger, mcache *cache.Cache, router *gin.Engine, prefix string) *Client {
 	cl := &Client{
 		Client: sn.NewClient(dsClient, logger, mcache, router),
 		User:   userClient,
 	}
-	cl.addRoutes(prefix)
-	return cl
+	return cl.addRoutes(prefix)
 }
 
-func (client *Client) addRoutes(prefix string) {
+func (client *Client) addRoutes(prefix string) *Client {
 	g1 := client.Router.Group(prefix)
 
 	// Index
@@ -57,5 +56,5 @@ func (client *Client) addRoutes(prefix string) {
 		client.GetRunning,
 		client.DailyNotifications,
 	)
-
+	return client
 }
