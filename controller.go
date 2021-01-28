@@ -176,12 +176,12 @@ func (client Client) JSONIndexAction(c *gin.Context) {
 
 	cu, err := client.User.Current(c)
 	if err != nil {
-		c.JSON(http.StatusOK, fmt.Sprintf("%v", err))
-		return
+		client.Log.Warningf(err.Error())
 	}
 
 	data, err := toGameTable(c, cu)
 	if err != nil {
+		client.Log.Errorf(err.Error())
 		c.JSON(http.StatusOK, fmt.Sprintf("%v", err))
 		return
 	}

@@ -4,9 +4,10 @@ go 1.14
 
 require (
 	cloud.google.com/go/datastore v1.4.0
+	cloud.google.com/go/logging v1.2.0 // indirect
 	github.com/SlothNinja/color v1.0.0
 	github.com/SlothNinja/log v1.0.2
-	github.com/SlothNinja/rating v1.0.6
+	github.com/SlothNinja/rating v1.0.7
 	github.com/SlothNinja/restful v1.0.0
 	github.com/SlothNinja/send v1.0.0
 	github.com/SlothNinja/sn v1.0.3
