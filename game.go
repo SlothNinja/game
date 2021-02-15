@@ -1,6 +1,8 @@
 package game
 
 import (
+	"fmt"
+
 	"cloud.google.com/go/datastore"
 	"github.com/SlothNinja/color"
 	"github.com/SlothNinja/log"
@@ -8,6 +10,7 @@ import (
 	gtype "github.com/SlothNinja/type"
 	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Gamers []Gamer
@@ -74,6 +77,39 @@ func (h *Header) validateAccept(c *gin.Context, u *user.User) error {
 		return sn.NewVError("%s provided incorrect password for Game #%d: %s.", u.Name, h.ID, h.Title)
 	}
 	return nil
+}
+
+// Returns (true, nil) if game should be started
+func (h *Header) AcceptWith(u *user.User, pwd []byte) (bool, error) {
+	err := h.validateAcceptWith(u, pwd)
+	if err != nil {
+		return false, err
+	}
+
+	h.AddUser(u)
+	if len(h.UserIDS) == int(h.NumPlayers) {
+		return true, nil
+	}
+	return false, nil
+}
+
+func (h *Header) validateAcceptWith(u *user.User, pwd []byte) error {
+	switch {
+	case len(h.UserIDS) >= int(h.NumPlayers):
+		return fmt.Errorf("game already has the maximum number of players: %w", sn.ErrValidation)
+	case h.HasUser(u):
+		return fmt.Errorf("%s has already accepted this invitation: %w", u.Name, sn.ErrValidation)
+	case len(h.Password) != 0:
+		err := bcrypt.CompareHashAndPassword([]byte(h.Password), pwd)
+		if err != nil {
+			log.Warningf(err.Error())
+			return fmt.Errorf("%s provided incorrect password for Game %s: %w",
+				u.Name, h.Title, sn.ErrValidation)
+		}
+		return nil
+	default:
+		return nil
+	}
 }
 
 func (h *Header) Drop(u *user.User) (err error) {

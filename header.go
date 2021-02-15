@@ -16,6 +16,7 @@ import (
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/send"
 	gtype "github.com/SlothNinja/type"
+	"github.com/SlothNinja/undo"
 	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 	"github.com/mailjet/mailjet-apiv3-go"
@@ -30,33 +31,47 @@ type Header struct {
 	Users   user.Users     `datastore:"-" json:"users"`
 	Key     *datastore.Key `datastore:"__key__"`
 
-	Type          gtype.Type  `json:"type"`
-	Title         string      `form:"title" json:"title"`
-	Turn          int         `form:"turn" json:"turn" binding:"min=0"`
-	Phase         Phase       `form:"phase" json:"phase" binding:"min=0"`
-	SubPhase      SubPhase    `form:"sub-phase" json:"subPhase" binding:"min=0"`
-	Round         int         `form:"round" json:"round" binding:"min=0"`
-	NumPlayers    int         `form:"num-players" json:"numPlayers" binding"min=0,max=5"`
-	Password      string      `form:"password" json:"-"`
-	CreatorID     int64       `form:"creator-id" json:"creatorId"`
-	CreatorSID    string      `form:"creator-sid" json:"creatorSId"`
-	CreatorName   string      `form:"creator-name" json:"creatorName"`
-	UserIDS       []int64     `form:"user-ids" json:"userIds"`
-	UserSIDS      []string    `form:"user-sids" json:"userSIds"`
-	UserNames     []string    `form:"user-names" json:"userNames"`
-	UserEmails    []string    `form:"user-emails" json:"userEmails"`
-	UserGravTypes []string    `form:"user-grav-types" json:"userGravTypes"`
-	OrderIDS      UserIndices `form:"order-ids" json:"-"`
-	CPUserIndices UserIndices `form:"cp-user-indices" json:"cpUserIndices"`
-	WinnerIDS     UserIndices `form:"winner-ids" json:"winnerIndices"`
-	Status        Status      `form:"status" json:"status"`
-	Progress      string      `form:"progress" json:"progress"`
-	Options       []string    `form:"options" json:"options"`
-	OptString     string      `form:"opt-string" json:"optString"`
-	SavedState    []byte      `datastore:"SavedState,noindex" json:"-"`
-	CreatedAt     time.Time   `form:"created-at" json:"createdAt"`
-	UpdatedAt     time.Time   `form:"updated-at" json:"updatedAt"`
-	UpdateCount   int         `json:"-"`
+	Type                      gtype.Type       `json:"type"`
+	Title                     string           `form:"title" json:"title"`
+	Turn                      int              `form:"turn" json:"turn" binding:"min=0"`
+	Phase                     Phase            `form:"phase" json:"phase" binding:"min=0"`
+	SubPhase                  SubPhase         `form:"sub-phase" json:"subPhase" binding:"min=0"`
+	Round                     int              `form:"round" json:"round" binding:"min=0"`
+	NumPlayers                int              `form:"num-players" json:"numPlayers" binding"min=0,max=5"`
+	Password                  string           `form:"password" json:"-"`
+	PasswordHash              []byte           `form:"passwordHash" json:"-"`
+	CreatorID                 int64            `form:"creator-id" json:"creatorId"`
+	CreatorKey                *datastore.Key   `form:"creator-key" json:"creatorKey"`
+	CreatorSID                string           `form:"creator-sid" json:"creatorSId"`
+	CreatorName               string           `form:"creator-name" json:"creatorName"`
+	CreatorEmail              string           `form:"creator-email" json:"creatorEmail"`
+	CreatorEmailNotifications bool             `form:"creator-email-notifications" json:"creatorEmailNotifications"`
+	CreatorEmailHash          string           `form:"creator-email-hash" json:"creatorEmailHash"`
+	CreatorGravType           string           `form:"creator-grav-type" json:"creatorGravType"`
+	UserIDS                   []int64          `form:"user-ids" json:"userIds"`
+	UserKeys                  []*datastore.Key `form:"user-keys" json:"userKeys"`
+	UserSIDS                  []string         `form:"user-sids" json:"userSIds"`
+	UserNames                 []string         `form:"user-names" json:"userNames"`
+	UserEmails                []string         `form:"user-emails" json:"userEmails"`
+	UserEmailHashes           []string         `form:"user-emails" json:"userEmailHashes"`
+	UserEmailNotifications    []bool           `form:"user-email-notifiactions" json:"userEmailNotifications"`
+	UserGravTypes             []string         `form:"user-grav-types" json:"userGravTypes"`
+	OrderIDS                  UserIndices      `form:"order-ids" json:"-"`
+	CPUserIndices             UserIndices      `form:"cp-user-indices" json:"cpUserIndices"`
+	CPIDS                     []int            `json:"cpids"`
+	WinnerIDS                 UserIndices      `form:"winner-ids" json:"winnerIndices"`
+	WinnerKeys                []*datastore.Key `form:"winner-keys" json:"winnerKeys"`
+	Status                    Status           `form:"status" json:"status"`
+	Undo                      undo.Stack       `json:"undo"`
+	Progress                  string           `form:"progress" json:"progress"`
+	Options                   []string         `form:"options" json:"options"`
+	OptString                 string           `form:"opt-string" json:"optString"`
+	SavedState                []byte           `datastore:"SavedState,noindex" json:"-"`
+	StartedAt                 time.Time        `form:"started-at" json:"starteddAt"`
+	CreatedAt                 time.Time        `form:"created-at" json:"createdAt"`
+	UpdatedAt                 time.Time        `form:"updated-at" json:"updatedAt"`
+	EndedAt                   time.Time        `form:"ended-at" json:"endedAt"`
+	UpdateCount               int              `json:"-"`
 }
 
 func (h *Header) Load(ps []datastore.Property) error {
@@ -280,23 +295,23 @@ func (h *Header) User(index int) *user.User {
 	return h.Users[i]
 }
 
-func (client *Client) AfterLoad(c *gin.Context, h *Header) error {
-	h.AfterLoad()
-	return nil
-}
-
-func (h *Header) AfterLoad() {
-	h.Users = make(user.Users, len(h.UserIDS))
-	for i, id := range h.UserIDS {
-		h.Users[i] = user.New(id)
-		h.Users[i].Name = h.UserNames[i]
-		h.Users[i].Email = h.UserEmails[i]
-	}
-
-	h.Creator = user.New(h.CreatorID)
-	h.Creator.Name = h.CreatorName
-	h.Creator.Email = h.CreatorName
-}
+// func (client *Client) AfterLoad(c *gin.Context, h *Header) error {
+// 	h.AfterLoad()
+// 	return nil
+// }
+//
+// func (h *Header) AfterLoad() {
+// 	h.Users = make(user.Users, len(h.UserIDS))
+// 	for i, id := range h.UserIDS {
+// 		h.Users[i] = user.New(id)
+// 		h.Users[i].Name = h.UserNames[i]
+// 		h.Users[i].Email = h.UserEmails[i]
+// 	}
+//
+// 	h.Creator = user.New(h.CreatorID)
+// 	h.Creator.Name = h.CreatorName
+// 	h.Creator.Email = h.CreatorName
+// }
 
 func include(ints []int64, i int64) bool {
 	for _, v := range ints {
@@ -337,33 +352,81 @@ func (h *Header) HasUser(u *user.User) bool {
 }
 
 func (h *Header) RemoveUser(u2 *user.User) {
-	for i, u := range h.Users {
-		if u.Equal(u2) {
-			h.Users = append(h.Users[:i], h.Users[i+1:]...)
-		}
+	i := h.indexFor(u2)
+	if i == NotFound {
+		return
 	}
-	h.updateUserFields()
+
+	if i >= 0 && i < len(h.UserIDS) {
+		h.UserIDS = append(h.UserIDS[:i], h.UserIDS[i+1:]...)
+	}
+	if i >= 0 && i < len(h.UserKeys) {
+		h.UserKeys = append(h.UserKeys[:i], h.UserKeys[i+1:]...)
+	}
+	if i >= 0 && i < len(h.UserNames) {
+		h.UserNames = append(h.UserNames[:i], h.UserNames[i+1:]...)
+	}
+	if i >= 0 && i < len(h.UserEmails) {
+		h.UserEmails = append(h.UserEmails[:i], h.UserEmails[i+1:]...)
+	}
+	if i >= 0 && i < len(h.UserEmailHashes) {
+		h.UserEmailHashes = append(h.UserEmailHashes[:i], h.UserEmailHashes[i+1:]...)
+	}
+	if i >= 0 && i < len(h.UserEmailNotifications) {
+		h.UserEmailNotifications = append(h.UserEmailNotifications[:i], h.UserEmailNotifications[i+1:]...)
+	}
+	if i >= 0 && i < len(h.UserGravTypes) {
+		h.UserGravTypes = append(h.UserGravTypes[:i], h.UserGravTypes[i+1:]...)
+	}
 }
 
-func (h *Header) updateUserFields() {
-	l := len(h.Users)
-	h.UserIDS = make([]int64, l)
-	h.UserNames = make([]string, l)
-	h.UserSIDS = make([]string, l)
-	for i, u := range h.Users {
-		h.UserIDS[i] = u.ID()
-		h.UserNames[i] = u.Name
-		h.UserSIDS[i] = user.GenID(u.GoogleID)
-	}
-}
+// func (h *Header) updateUserFields() {
+// 	if h.Creator != nil {
+// 	h.CreatorKey = h.Creator.Key
+// 	h.CreatorGravType = h.Creator.GravType
+//
+// 	l := len(h.Users)
+// 	h.UserIDS = make([]int64, l)
+// 	h.UserKeys = make([]*datastore.Key, l)
+// 	h.UserNames = make([]string, l)
+// 	h.UserSIDS = make([]string, l)
+// 	h.UserEmailHashes = make([]string, l)
+// 	h.UserGravTypes = make([]string, l)
+// 	for i, u := range h.Users {
+// 		h.UserIDS[i] = u.ID()
+// 		h.UserKeys[i] = u.Key
+// 		h.UserNames[i] = u.Name
+// 		h.UserSIDS[i] = user.GenID(u.GoogleID)
+// 		h.UserEmailHashes[i] = u.EmailHash
+// 		h.UserGravTypes[i] = u.GravType
+// 	}
+// }
 
 func (h *Header) AddUser(u *user.User) {
-	h.AddUsers(u)
+	h.UserIDS = append(h.UserIDS, u.ID())
+	h.UserKeys = append(h.UserKeys, u.Key)
+	h.UserNames = append(h.UserNames, u.Name)
+	h.UserEmails = append(h.UserEmails, u.Email)
+	h.UserEmailHashes = append(h.UserEmailHashes, u.EmailHash)
+	h.UserEmailNotifications = append(h.UserEmailNotifications, u.EmailNotifications)
+	h.UserGravTypes = append(h.UserGravTypes, u.GravType)
+}
+
+func (h *Header) AddCreator(u *user.User) {
+	h.Creator = u
+	h.CreatorID = u.ID()
+	h.CreatorKey = u.Key
+	h.CreatorName = u.Name
+	h.CreatorEmail = u.Email
+	h.CreatorEmailHash = u.EmailHash
+	h.CreatorEmailNotifications = u.EmailNotifications
+	h.CreatorGravType = u.GravType
 }
 
 func (h *Header) AddUsers(us ...*user.User) {
-	h.Users = append(h.Users, us...)
-	h.updateUserFields()
+	for _, u := range us {
+		h.AddUser(u)
+	}
 }
 
 // func (h *Header) IsAdmin() bool {
@@ -934,10 +997,10 @@ func (h *Header) SendTurnNotificationsTo(c *gin.Context, ps ...Playerer) error {
 	return me
 }
 
-func (h Header) indexFor(u *user.User) (i int) {
-	for i = range h.UserIDS {
-		if h.UserIDS[i] == u.ID() {
-			return
+func (h *Header) indexFor(u *user.User) int {
+	for i, uid := range h.UserIDS {
+		if uid == u.ID() {
+			return i
 		}
 	}
 	return -1
