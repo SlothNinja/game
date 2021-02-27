@@ -12,13 +12,15 @@ import (
 
 type Client struct {
 	*sn.Client
-	User *user.Client
+	User      *user.Client
+	afterLoad bool
 }
 
-func NewClient(dsClient *datastore.Client, userClient *user.Client, logger *log.Logger, mcache *cache.Cache, router *gin.Engine, prefix string) *Client {
+func NewClient(dsClient *datastore.Client, userClient *user.Client, logger *log.Logger, mcache *cache.Cache, router *gin.Engine, prefix string, afterLoad bool) *Client {
 	cl := &Client{
-		Client: sn.NewClient(dsClient, logger, mcache, router),
-		User:   userClient,
+		Client:    sn.NewClient(dsClient, logger, mcache, router),
+		User:      userClient,
+		afterLoad: afterLoad,
 	}
 	return cl.addRoutes(prefix)
 }

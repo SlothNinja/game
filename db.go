@@ -22,7 +22,7 @@ func getAllQuery(c *gin.Context) *datastore.Query {
 	return datastore.NewQuery("Game").Ancestor(GamesRoot(c))
 }
 
-func (client Client) getFiltered(c *gin.Context, status, sid, start, length string, t gtype.Type) (Gamers, int64, error) {
+func (client *Client) getFiltered(c *gin.Context, status, sid, start, length string, t gtype.Type) (Gamers, int64, error) {
 	client.Log.Debugf("Entering")
 	defer client.Log.Debugf("Exiting")
 
@@ -90,12 +90,14 @@ func (client Client) getFiltered(c *gin.Context, status, sid, start, length stri
 		return nil, 0, err
 	}
 
-	// for i := range hs {
-	// 	err = client.AfterLoad(c, hs[i])
-	// 	if err != nil {
-	// 		return nil, 0, err
-	// 	}
-	// }
+	if client.afterLoad {
+		for i := range hs {
+			err = client.AfterLoad(c, hs[i])
+			if err != nil {
+				return nil, 0, err
+			}
+		}
+	}
 
 	return gs, int64(cnt), nil
 }

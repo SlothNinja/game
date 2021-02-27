@@ -295,23 +295,27 @@ func (h *Header) User(index int) *user.User {
 	return h.Users[i]
 }
 
-// func (client *Client) AfterLoad(c *gin.Context, h *Header) error {
-// 	h.AfterLoad()
-// 	return nil
-// }
-//
-// func (h *Header) AfterLoad() {
-// 	h.Users = make(user.Users, len(h.UserIDS))
-// 	for i, id := range h.UserIDS {
-// 		h.Users[i] = user.New(id)
-// 		h.Users[i].Name = h.UserNames[i]
-// 		h.Users[i].Email = h.UserEmails[i]
-// 	}
-//
-// 	h.Creator = user.New(h.CreatorID)
-// 	h.Creator.Name = h.CreatorName
-// 	h.Creator.Email = h.CreatorName
-// }
+func (client *Client) AfterLoad(c *gin.Context, h *Header) error {
+	h.AfterLoad()
+	return nil
+}
+
+func (h *Header) AfterLoad() {
+	h.Users = make(user.Users, len(h.UserIDS))
+	for i, id := range h.UserIDS {
+		h.Users[i] = user.New(id)
+		if i >= 0 && i < len(h.UserNames) {
+			h.Users[i].Name = h.UserNames[i]
+		}
+		if i >= 0 && i < len(h.UserEmails) {
+			h.Users[i].Email = h.UserEmails[i]
+		}
+	}
+
+	h.Creator = user.New(h.CreatorID)
+	h.Creator.Name = h.CreatorName
+	h.Creator.Email = h.CreatorEmail
+}
 
 func include(ints []int64, i int64) bool {
 	for _, v := range ints {
