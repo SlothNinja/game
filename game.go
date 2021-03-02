@@ -54,17 +54,19 @@ func (h *Header) RandomTurnOrder() {
 // Returns (true, nil) if game should be started
 func (h *Header) Accept(c *gin.Context, u *user.User) (start bool, err error) {
 	log.Debugf("Entering")
-	defer log.Debugf("Entering")
+	defer log.Debugf("Exiting")
 
-	if err = h.validateAccept(c, u); err != nil {
-		return
+	err = h.validateAccept(c, u)
+	if err != nil {
+		return false, err
 	}
 
 	h.AddUser(u)
-	if len(h.Users) == h.NumPlayers {
-		start = true
+	log.Debugf("h: %#v", h)
+	if len(h.UserIDS) == h.NumPlayers {
+		return true, nil
 	}
-	return
+	return false, nil
 }
 
 func (h *Header) validateAccept(c *gin.Context, u *user.User) error {

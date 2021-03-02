@@ -264,9 +264,7 @@ func (h *Header) FromForm(c *gin.Context, cu *user.User, t gtype.Type) error {
 	}
 
 	h.Password = obj.Password
-	h.Creator = cu
-	h.CreatorID = cu.ID()
-	h.CreatorSID = user.GenID(cu.GoogleID)
+	h.AddCreator(cu)
 	h.AddUser(cu)
 	h.Status = Recruiting
 	h.Type = t
@@ -944,12 +942,11 @@ func (h *Header) notificationFor(c *gin.Context, p Playerer) (mailjet.InfoMessag
 		return msg, err
 	}
 
-	u := p.User()
 	msg.HTMLPart = buf.String()
 	msg.To = &mailjet.RecipientsV31{
 		mailjet.RecipientV31{
-			Email: u.Email,
-			Name:  u.Name,
+			Email: h.EmailFor(p),
+			Name:  h.NameFor(p),
 		},
 	}
 	return msg, nil

@@ -19,17 +19,13 @@ func (client Client) Index(prefix string) gin.HandlerFunc {
 		client.Log.Debugf("Entering")
 		defer client.Log.Debugf("Exiting")
 
-		log.Debugf("Request: %#v", c.Request)
-
 		gs := GamersFrom(c)
-		client.Log.Debugf("games: %v", gs)
 		cu, err := client.User.Current(c)
 		if err != nil {
 			client.Log.Debugf(err.Error())
 		}
 
 		status := StatusFrom(c)
-		client.Log.Debugf("status: %v", status)
 		switch status {
 		case Recruiting:
 			c.HTML(http.StatusOK, "shared/invitation_index", gin.H{
