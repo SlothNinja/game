@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"cloud.google.com/go/datastore"
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
@@ -14,7 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (client Client) Index(prefix string) gin.HandlerFunc {
+func (client *Client) Index(prefix string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		client.Log.Debugf("Entering")
 		defer client.Log.Debugf("Exiting")
@@ -44,6 +45,37 @@ func (client Client) Index(prefix string) gin.HandlerFunc {
 			})
 		}
 	}
+}
+
+func (cl *Client) JIndex(c *gin.Context) {
+	cl.Log.Debugf("Entering")
+	defer cl.Log.Debugf("Exiting")
+
+	cu, err := cl.User.Current(c)
+	if err != nil {
+		sn.JErr(c, err)
+		return
+	}
+
+	status := ToStatus[c.Param("status")]
+	q := datastore.
+		NewQuery("Game").
+		Filter("Status=", int(status)).
+		Order("-UpdatedAt")
+
+	var hs []*Header
+	_, err = cl.DS.GetAll(c, q, &hs)
+	if err != nil {
+		sn.JErr(c, err)
+		return
+	}
+
+	es := make([]withID, len(hs))
+	for i, h := range hs {
+		es[i] = withID{h}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"gheaders": es, "cu": cu})
 }
 
 type ActionType int

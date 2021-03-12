@@ -2,6 +2,7 @@ package game
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -354,7 +355,7 @@ func (h *Header) HasUser(u *user.User) bool {
 }
 
 func (h *Header) RemoveUser(u2 *user.User) {
-	i := h.indexFor(u2)
+	i := h.indexFor(u2.ID())
 	if i == NotFound {
 		return
 	}
@@ -608,7 +609,7 @@ func (h *Header) isCP(uIndex int) bool {
 
 // IsCurrentPlayer returns true if the specified user is the current player.
 func (h *Header) IsCurrentPlayer(u *user.User) bool {
-	return u != nil && h.isCP(h.indexFor(u))
+	return u != nil && h.isCP(h.indexFor(u.ID()))
 }
 
 // IsCurrentPlayer returns ture if the user is the current player or an admin.
@@ -998,11 +999,47 @@ func (h *Header) SendTurnNotificationsTo(c *gin.Context, ps ...Playerer) error {
 	return me
 }
 
-func (h *Header) indexFor(u *user.User) int {
-	for i, uid := range h.UserIDS {
-		if uid == u.ID() {
-			return i
-		}
+// func (h *Header) indexFor(u *user.User) int {
+// 	for i, uid := range h.UserIDS {
+// 		if uid == u.ID() {
+// 			return i
+// 		}
+// 	}
+// 	return -1
+// }
+
+type withID struct {
+	*Header
+}
+
+func (wid *withID) MarshalJSON() ([]byte, error) {
+	jHeader := struct {
+		ID          int64  `json:"id"`
+		LastUpdated string `json:"lastUpdated"`
+		*Header
+	}{wid.Key.ID, lastUpdated(wid.UpdatedAt), wid.Header}
+	return json.Marshal(jHeader)
+}
+
+const (
+	day   = 24 * time.Hour
+	month = 30 * day
+	year  = 365 * day
+)
+
+func lastUpdated(t time.Time) string {
+	duration := time.Since(t)
+	switch {
+	case duration < time.Minute:
+		return fmt.Sprintf("%d sec", int(duration.Seconds()))
+	case duration < time.Hour:
+		return fmt.Sprintf("%d min", int(duration.Minutes()))
+	case duration < day:
+		return fmt.Sprintf("%d hour", int(duration.Hours()))
+	case duration < month:
+		return fmt.Sprintf("%d day", int(duration/day))
+	case duration < year:
+		return fmt.Sprintf("%d month", int(duration/month))
 	}
-	return -1
+	return fmt.Sprintf("%d year", int(duration/year))
 }

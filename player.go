@@ -163,20 +163,14 @@ func (h *Header) NameByUID(uid int64) (n string) {
 	return
 }
 
-// func (h *Header) NameByUSID(sid string) (n string) {
-// 	var index int = NotFound
-// 	for i := range h.UserIDS {
-// 		if sid == h.UserSIDS[i] {
-// 			index = i
-// 			break
-// 		}
-// 	}
-//
-// 	if index != NotFound {
-// 		n = h.NameByPID(index)
-// 	}
-// 	return
-// }
+func (h *Header) indexFor(uid int64) int {
+	for i := range h.UserIDS {
+		if uid == h.UserIDS[i] {
+			return i
+		}
+	}
+	return NotFound
+}
 
 func (h *Header) EmailFor(p Playerer) (em string) {
 	if l, pid := len(h.UserEmails), p.ID(); pid >= 0 && pid < l {

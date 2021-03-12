@@ -62,6 +62,10 @@ func (client Client) DailyNotifications(c *gin.Context) {
 			continue
 		}
 
+		if !u.EmailReminders {
+			continue
+		}
+
 		err = tmpl.Execute(buf, gin.H{
 			"Info": gameInfos,
 			"User": u,

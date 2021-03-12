@@ -25,38 +25,43 @@ func NewClient(dsClient *datastore.Client, userClient *user.Client, logger *log.
 	return cl.addRoutes(prefix)
 }
 
-func (client *Client) addRoutes(prefix string) *Client {
-	g1 := client.Router.Group(prefix)
+func (cl *Client) addRoutes(prefix string) *Client {
+	g1 := cl.Router.Group(prefix)
 
 	// Index
 	g1.GET("/:status",
 		// gtype.SetTypes(),
-		client.Index(prefix),
+		cl.Index(prefix),
 	)
 
 	// JSON Data for Index
 	g1.POST("/:status/json",
 		// gtype.SetTypes(),
-		client.GetFiltered(gtype.All),
-		client.JSONIndexAction,
+		cl.GetFiltered(gtype.All),
+		cl.JSONIndexAction,
+	)
+
+	// JSON Data for Index
+	g1.GET("/:status/json",
+		cl.JIndex,
 	)
 
 	// Index
 	g1.GET("/:status/user/:uid",
 		// gtype.SetTypes(),
-		client.Index(prefix),
+		cl.Index(prefix),
 	)
 
 	// JSON Data for Index
 	g1.POST("/:status/user/:uid/json",
 		// gtype.SetTypes(),
-		client.GetFiltered(gtype.All),
-		client.JSONIndexAction,
+		cl.GetFiltered(gtype.All),
+		cl.JSONIndexAction,
 	)
 
 	g1.GET("/:status/notifications",
-		client.GetRunning,
-		client.DailyNotifications,
+		cl.GetRunning,
+		cl.DailyNotifications,
 	)
-	return client
+	return cl
 }
