@@ -224,10 +224,6 @@ func (h *Header) FromParams(c *gin.Context, cu *user.User, t gtype.Type) error {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	// cu, err := user.CurrentFrom(c)
-	// if err != nil {
-	// 	return err
-	// }
 	h.Title = cu.Name + "'s Game"
 	h.Status = Recruiting
 	h.Type = t
@@ -248,11 +244,6 @@ func (h *Header) FromForm(c *gin.Context, cu *user.User, t gtype.Type) error {
 	if err != nil {
 		return err
 	}
-
-	// cu, err := user.CurrentFrom(c)
-	// if err != nil {
-	// 	return err
-	// }
 
 	h.Title = cu.Name + "'s Game"
 	if obj.Title != "" {
@@ -355,7 +346,7 @@ func (h *Header) HasUser(u *user.User) bool {
 }
 
 func (h *Header) RemoveUser(u2 *user.User) {
-	i := h.indexFor(u2.ID())
+	i := h.IndexFor(u2.ID())
 	if i == NotFound {
 		return
 	}
@@ -383,28 +374,6 @@ func (h *Header) RemoveUser(u2 *user.User) {
 	}
 }
 
-// func (h *Header) updateUserFields() {
-// 	if h.Creator != nil {
-// 	h.CreatorKey = h.Creator.Key
-// 	h.CreatorGravType = h.Creator.GravType
-//
-// 	l := len(h.Users)
-// 	h.UserIDS = make([]int64, l)
-// 	h.UserKeys = make([]*datastore.Key, l)
-// 	h.UserNames = make([]string, l)
-// 	h.UserSIDS = make([]string, l)
-// 	h.UserEmailHashes = make([]string, l)
-// 	h.UserGravTypes = make([]string, l)
-// 	for i, u := range h.Users {
-// 		h.UserIDS[i] = u.ID()
-// 		h.UserKeys[i] = u.Key
-// 		h.UserNames[i] = u.Name
-// 		h.UserSIDS[i] = user.GenID(u.GoogleID)
-// 		h.UserEmailHashes[i] = u.EmailHash
-// 		h.UserGravTypes[i] = u.GravType
-// 	}
-// }
-
 func (h *Header) AddUser(u *user.User) {
 	h.UserIDS = append(h.UserIDS, u.ID())
 	h.UserKeys = append(h.UserKeys, u.Key)
@@ -431,10 +400,6 @@ func (h *Header) AddUsers(us ...*user.User) {
 		h.AddUser(u)
 	}
 }
-
-// func (h *Header) IsAdmin() bool {
-// 	return user.IsAdmin(h.CTX())
-// }
 
 func (h *Header) CurrentPlayerer() Playerer {
 	if len(h.CurrentPlayerers()) == 1 {
@@ -609,7 +574,7 @@ func (h *Header) isCP(uIndex int) bool {
 
 // IsCurrentPlayer returns true if the specified user is the current player.
 func (h *Header) IsCurrentPlayer(u *user.User) bool {
-	return u != nil && h.isCP(h.indexFor(u.ID()))
+	return u != nil && h.isCP(h.IndexFor(u.ID()))
 }
 
 // IsCurrentPlayer returns ture if the user is the current player or an admin.
@@ -628,11 +593,6 @@ func (h *Header) CurrentUserIsCurrentPlayerOrAdmin(cu *user.User) bool {
 	log.Warningf("CurrentUserIsCurrentPlayerOrAdmin is deprecated in favor of CUserIsCPlayerOrAdmin.")
 	return h.isCurrentPlayerOrAdmin(c, cu)
 }
-
-// // CUserIsCPlayerOrAdmin returns true if current user is the current player or is an administrator.
-// func (h *Header) CUserIsCPlayerOrAdmin(c *gin.Context, cu *user.User) bool {
-// 	return h.isCurrentPlayerOrAdmin(c, cu)
-// }
 
 func (h *Header) PlayerIsUser(p Playerer, u *user.User) bool {
 	return p != nil && u != nil && h.UserIDFor(p) == u.ID()
@@ -998,15 +958,6 @@ func (h *Header) SendTurnNotificationsTo(c *gin.Context, ps ...Playerer) error {
 	}
 	return me
 }
-
-// func (h *Header) indexFor(u *user.User) int {
-// 	for i, uid := range h.UserIDS {
-// 		if uid == u.ID() {
-// 			return i
-// 		}
-// 	}
-// 	return -1
-// }
 
 type withID struct {
 	*Header

@@ -1,13 +1,9 @@
 package game
 
 import (
-	"cloud.google.com/go/datastore"
-	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/sn"
 	gtype "github.com/SlothNinja/type"
 	"github.com/SlothNinja/user"
-	"github.com/gin-gonic/gin"
-	"github.com/patrickmn/go-cache"
 )
 
 type Client struct {
@@ -16,9 +12,9 @@ type Client struct {
 	afterLoad bool
 }
 
-func NewClient(dsClient *datastore.Client, userClient *user.Client, logger *log.Logger, mcache *cache.Cache, router *gin.Engine, prefix string, afterLoad bool) *Client {
+func NewClient(snClient *sn.Client, userClient *user.Client, prefix string, afterLoad bool) *Client {
 	cl := &Client{
-		Client:    sn.NewClient(dsClient, logger, mcache, router),
+		Client:    snClient,
 		User:      userClient,
 		afterLoad: afterLoad,
 	}
@@ -42,7 +38,7 @@ func (cl *Client) addRoutes(prefix string) *Client {
 	)
 
 	// JSON Data for Index
-	g1.GET("/:status/json",
+	g1.PUT("/:status/json",
 		cl.JIndex,
 	)
 

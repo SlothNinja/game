@@ -13,6 +13,7 @@ import (
 	"github.com/SlothNinja/sn"
 	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
+	"google.golang.org/api/iterator"
 )
 
 func (client *Client) Index(prefix string) gin.HandlerFunc {
@@ -47,11 +48,30 @@ func (client *Client) Index(prefix string) gin.HandlerFunc {
 	}
 }
 
-func (cl *Client) JIndex(c *gin.Context) {
-	cl.Log.Debugf("Entering")
-	defer cl.Log.Debugf("Exiting")
+func (client *Client) JIndex(c *gin.Context) {
+	client.Log.Debugf("Entering")
+	defer client.Log.Debugf("Exiting")
 
-	cu, err := cl.User.Current(c)
+	options := struct {
+		ItemsPerPage int    `json:"itemsPerPage"`
+		Forward      string `json:"forward"`
+	}{}
+
+	err := c.ShouldBind(&options)
+	if err != nil {
+		sn.JErr(c, err)
+		return
+	}
+
+	client.Log.Debugf("options: %#v", options)
+
+	cu, err := client.User.Current(c)
+	if err != nil {
+		sn.JErr(c, err)
+		return
+	}
+
+	forward, err := datastore.DecodeCursor(options.Forward)
 	if err != nil {
 		sn.JErr(c, err)
 		return
@@ -63,19 +83,45 @@ func (cl *Client) JIndex(c *gin.Context) {
 		Filter("Status=", int(status)).
 		Order("-UpdatedAt")
 
-	var hs []*Header
-	_, err = cl.DS.GetAll(c, q, &hs)
+	cnt, err := client.DS.Count(c, q)
 	if err != nil {
 		sn.JErr(c, err)
 		return
 	}
 
-	es := make([]withID, len(hs))
-	for i, h := range hs {
-		es[i] = withID{h}
+	client.Log.Debugf("cnt: %v", cnt)
+	items := options.ItemsPerPage
+	if options.ItemsPerPage == -1 {
+		items = cnt
 	}
 
-	c.JSON(http.StatusOK, gin.H{"gheaders": es, "cu": cu})
+	var es []*withID
+	it := client.DS.Run(c, q.Start(forward))
+	for i := 0; i < items; i++ {
+		var gh Header
+		_, err := it.Next(&gh)
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			sn.JErr(c, err)
+			return
+		}
+		es = append(es, &withID{&gh})
+	}
+
+	forward, err = it.Cursor()
+	if err != nil {
+		sn.JErr(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"gheaders":   es,
+		"totalItems": cnt,
+		"forward":    forward.String(),
+		"cu":         cu,
+	})
 }
 
 type ActionType int
@@ -104,30 +150,6 @@ type Action struct {
 	Call func(Gamer) (string, error)
 	Type ActionType
 }
-
-// func NotCurrentPlayerOrAdmin(prefix string) gin.HandlerFunc {
-// 	return func(c *gin.Context) {
-// 		switch g := GamerFrom(c); {
-// 		case g == nil:
-// 			restful.AddErrorf(c, "Did not load game from database.")
-// 			c.Redirect(http.StatusSeeOther, homePath)
-// 		case g.GetHeader().CUserIsCPlayerOrAdmin(c):
-// 			c.Redirect(http.StatusSeeOther, showPath(c, prefix, c.Param("gid")))
-// 		}
-// 	}
-// }
-
-// func CurrentPlayerOrAdmin(prefix, idParam string) gin.HandlerFunc {
-// 	return func(c *gin.Context) {
-// 		switch g := GamerFrom(c); {
-// 		case g == nil:
-// 			restful.AddErrorf(c, "Did not load game from database.")
-// 			c.Redirect(http.StatusSeeOther, homePath)
-// 		case !g.GetHeader().CUserIsCPlayerOrAdmin(c):
-// 			c.Redirect(http.StatusSeeOther, showPath(c, prefix, c.Param(idParam)))
-// 		}
-// 	}
-// }
 
 func showPath(c *gin.Context, prefix, id string) string {
 	return fmt.Sprintf("/%s/game/%s/show", prefix, id)

@@ -163,7 +163,7 @@ func (h *Header) NameByUID(uid int64) (n string) {
 	return
 }
 
-func (h *Header) indexFor(uid int64) int {
+func (h *Header) IndexFor(uid int64) int {
 	for i := range h.UserIDS {
 		if uid == h.UserIDS[i] {
 			return i
@@ -256,15 +256,6 @@ func (p *Player) TextColor() (c color.Color) {
 }
 
 // A bit of a misnomer
-// Returns whether the current user is an admin
-//func (p *Player) IsAdmin() bool {
-//	if p == nil {
-//		return false
-//	}
-//	return p.gamer.CurrentUser().IsAdmin(p.gamer.CTX())
-//}
-
-// A bit of a misnomer
 // Returns whether the current user is the same as the player's user
 func (p *Player) IsCurrentUser(cu *user.User) bool {
 	if p == nil {
@@ -272,16 +263,6 @@ func (p *Player) IsCurrentUser(cu *user.User) bool {
 	}
 	return p.User().Equal(cu)
 }
-
-// A bit of a misnomer
-// Returns whether the current user is the same as the player's user or
-// whether the current user is an admin.
-//func (p *Player) IsCurrentUserOrAdmin(ctx context.Context) bool {
-//	if p == nil {
-//		return false
-//	}
-//	return p.IsCurrentUser() || user.IsAdmin(ctx)
-//}
 
 func (p *Player) IsCurrentPlayer() bool {
 	for _, player := range p.gamer.CurrentPlayerers() {
@@ -300,33 +281,6 @@ func (p *Player) IsWinner() (b bool) {
 	}
 	return
 }
-
-//func (p *Player) Link() template.HTML {
-//	u := p.User()
-//	cp := p.IsCurrentPlayer()
-//	me := u.IsCurrent(p.gamer.CTX())
-//	w := p.IsWinner()
-//
-//	result := fmt.Sprintf(`<a href="/user/show/%d" >%s</a>`, u.ID, u.Name)
-//	h := p.gamer.GetHeader()
-//	switch h.Status {
-//	case Running:
-//		switch {
-//		case cp && me:
-//			result = fmt.Sprintf(`<a href="/user/show/%d" class="current-player me">%s</a>`, u.ID, u.Name)
-//		case cp:
-//			result = fmt.Sprintf(`<a href="/user/show/%d" class="current-player">%s</a>`, u.ID, u.Name)
-//		}
-//	case Completed:
-//		switch {
-//		case w && me:
-//			result = fmt.Sprintf(`<a href="/user/show/%d" class="winner me">%s</a>`, u.ID, u.Name)
-//		case w:
-//			result = fmt.Sprintf(`<a href="/user/show/%d" class="winner">%s</a>`, u.ID, u.Name)
-//		}
-//	}
-//	return template.HTML(result)
-//}
 
 func (p *Player) Init(g Gamer) {
 	p.SetGame(g)

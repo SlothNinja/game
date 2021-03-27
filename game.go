@@ -132,23 +132,3 @@ func (h *Header) validateDrop(u *user.User) (err error) {
 	}
 	return
 }
-
-// func RequireCurrentPlayerOrAdmin() gin.HandlerFunc {
-// 	return func(c *gin.Context) {
-// 		log.Debugf("Entering")
-// 		defer log.Debugf("Exiting")
-//
-// 		g := GamerFrom(c)
-// 		if g == nil {
-// 			log.Warningf("Missing Gamer")
-// 			c.Abort()
-// 			return
-// 		}
-//
-// 		if !g.GetHeader().CUserIsCPlayerOrAdmin(c) {
-// 			log.Warningf("Current User is Not Current Player or Admin")
-// 			c.Abort()
-// 			return
-// 		}
-// 	}
-// }
