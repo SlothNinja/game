@@ -96,13 +96,14 @@ func (h *Header) AcceptWith(u *user.User, pwd []byte) (bool, error) {
 }
 
 func (h *Header) validateAcceptWith(u *user.User, pwd []byte) error {
+	log.Debugf("PasswordHash: %v", h.PasswordHash)
 	switch {
 	case len(h.UserIDS) >= int(h.NumPlayers):
 		return fmt.Errorf("game already has the maximum number of players: %w", sn.ErrValidation)
 	case h.HasUser(u):
 		return fmt.Errorf("%s has already accepted this invitation: %w", u.Name, sn.ErrValidation)
-	case len(h.Password) != 0:
-		err := bcrypt.CompareHashAndPassword([]byte(h.Password), pwd)
+	case len(h.PasswordHash) != 0:
+		err := bcrypt.CompareHashAndPassword(h.PasswordHash, pwd)
 		if err != nil {
 			log.Warningf(err.Error())
 			return fmt.Errorf("%s provided incorrect password for Game %s: %w",
