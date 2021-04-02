@@ -994,3 +994,37 @@ func lastUpdated(t time.Time) string {
 	}
 	return fmt.Sprintf("%d year", int(duration/year))
 }
+
+// GHeader stores game headers with associate game data.
+type GHeader struct {
+	Key *datastore.Key `datastore:"__key__"`
+	Header
+}
+
+func (gh GHeader) id() int64 {
+	if gh.Key == nil {
+		return 0
+	}
+	return gh.Key.ID
+}
+
+// MarshalJSON implements json.Marshaler interface
+func (gh GHeader) MarshalJSON() ([]byte, error) {
+	h, err := json.Marshal(gh.Header)
+	if err != nil {
+		return nil, err
+	}
+
+	var data map[string]interface{}
+	err = json.Unmarshal(h, &data)
+	if err != nil {
+		return nil, err
+	}
+
+	data["key"] = gh.Key
+	data["id"] = gh.id()
+	data["lastUpdated"] = restful.LastUpdated(gh.UpdatedAt)
+	data["public"] = len(gh.Password) == 0
+
+	return json.Marshal(data)
+}

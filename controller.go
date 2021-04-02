@@ -11,6 +11,7 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
+	gType "github.com/SlothNinja/type"
 	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/api/iterator"
@@ -360,4 +361,94 @@ func actionButtons(c *gin.Context, cu *user.User, g Gamer) template.HTML {
 	default:
 		return ""
 	}
+}
+
+func (cl *Client) GamesIndex(c *gin.Context) {
+	cl.Log.Debugf("Entering")
+	defer cl.Log.Debugf("Exiting")
+
+	obj := struct {
+		Options struct {
+			ItemsPerPage int `json:"itemsPerPage"`
+		} `json:"options"`
+		Forward string `json:"forward"`
+		Status  string `json:"status"`
+		Type    string `json:"type"`
+	}{}
+
+	err := c.ShouldBind(&obj)
+	if err != nil {
+		sn.JErr(c, err)
+		return
+	}
+
+	cl.Log.Debugf("obj: %#v", obj)
+
+	cu, err := cl.User.Current(c)
+	if err != nil {
+		sn.JErr(c, err)
+		return
+	}
+	cl.Log.Debugf("cu: %#v", cu)
+	cl.Log.Debugf("err: %#v", err)
+
+	forward, err := datastore.DecodeCursor(obj.Forward)
+	if err != nil {
+		sn.JErr(c, err)
+		return
+	}
+
+	cl.Log.Debugf("forward: %#v", forward)
+	status := ToStatus[obj.Status]
+	t := gType.ToType[obj.Type]
+	q := datastore.
+		NewQuery("Game").
+		Filter("Status=", int(status)).
+		Order("-UpdatedAt")
+
+	if t != gType.All && t != gType.NoType {
+		q = q.Filter("Type=", int(t))
+	}
+
+	cnt, err := cl.DS.Count(c, q)
+	if err != nil {
+		sn.JErr(c, err)
+		return
+	}
+
+	cl.Log.Debugf("cnt: %v", cnt)
+	items := obj.Options.ItemsPerPage
+	if obj.Options.ItemsPerPage == -1 {
+		items = cnt
+	}
+
+	var es []*GHeader
+	it := cl.DS.Run(c, q.Start(forward))
+	for i := 0; i < items; i++ {
+		var h Header
+		k, err := it.Next(&h)
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			sn.JErr(c, err)
+			return
+		}
+		es = append(es, &GHeader{Key: k, Header: h})
+	}
+
+	forward, err = it.Cursor()
+	if err != nil {
+		sn.JErr(c, err)
+		return
+	}
+
+	cl.Log.Debugf("forward: %#v", forward)
+	cl.Log.Debugf("forward.String: %#v", forward.String())
+	c.JSON(http.StatusOK, gin.H{
+		"gheaders":   es,
+		"totalItems": cnt,
+		"forward":    forward.String(),
+		"cu":         cu,
+	})
 }

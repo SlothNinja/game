@@ -31,11 +31,7 @@ func (cl *Client) addRoutes(prefix string) *Client {
 	)
 
 	// JSON Data for Index
-	g1.POST("/:status/json",
-		// gtype.SetTypes(),
-		cl.GetFiltered(gtype.All),
-		cl.JSONIndexAction,
-	)
+	g1.POST("", cl.GamesIndex)
 
 	// JSON Data for Index
 	g1.PUT("/:status/json",
