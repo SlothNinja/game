@@ -374,6 +374,7 @@ func (cl *Client) GamesIndex(c *gin.Context) {
 		Forward string `json:"forward"`
 		Status  string `json:"status"`
 		Type    string `json:"type"`
+		UserID  int64  `json:"userId"`
 	}{}
 
 	err := c.ShouldBind(&obj)
@@ -408,6 +409,10 @@ func (cl *Client) GamesIndex(c *gin.Context) {
 
 	if t != gType.All && t != gType.NoType {
 		q = q.Filter("Type=", int(t))
+	}
+
+	if obj.UserID != 0 {
+		q = q.Filter("UserIDS=", obj.UserID)
 	}
 
 	cnt, err := cl.DS.Count(c, q)

@@ -917,11 +917,6 @@ func (h *Header) SendTurnNotificationsTo(c *gin.Context, ps ...Playerer) error {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	// Re-enabled turn notifications for all games but indonesia
-	if h.Type == gtype.Indonesia {
-		return nil
-	}
-
 	l := len(ps)
 	if l == 0 {
 		return nil
