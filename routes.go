@@ -31,7 +31,7 @@ func (cl *Client) addRoutes(prefix string) *Client {
 	)
 
 	// JSON Data for Index
-	g1.POST("", cl.GamesIndex)
+	// g1.POST("", cl.GamesIndex)
 
 	// JSON Data for Index
 	g1.PUT("/:status/json",

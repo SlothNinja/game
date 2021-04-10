@@ -1,6 +1,8 @@
 package game
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -11,7 +13,7 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
-	gType "github.com/SlothNinja/type"
+	gtype "github.com/SlothNinja/type"
 	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/api/iterator"
@@ -363,97 +365,250 @@ func actionButtons(c *gin.Context, cu *user.User, g Gamer) template.HTML {
 	}
 }
 
-func (cl *Client) GamesIndex(c *gin.Context) {
+type Options struct {
+	ItemsPerPage int
+	Kind         string
+	Forward      datastore.Cursor
+	Status       Status
+	Type         gtype.Type
+	UserID       int64
+}
+
+func (cl *Client) GamesIndex(ctx context.Context, opt Options) ([]*IndexEntry, int, datastore.Cursor, error) {
 	cl.Log.Debugf("Entering")
 	defer cl.Log.Debugf("Exiting")
 
-	obj := struct {
-		Options struct {
-			ItemsPerPage int `json:"itemsPerPage"`
-		} `json:"options"`
-		Forward string `json:"forward"`
-		Status  string `json:"status"`
-		Type    string `json:"type"`
-		UserID  int64  `json:"userId"`
-	}{}
-
-	err := c.ShouldBind(&obj)
-	if err != nil {
-		sn.JErr(c, err)
-		return
-	}
-
-	cl.Log.Debugf("obj: %#v", obj)
-
-	cu, err := cl.User.Current(c)
-	if err != nil {
-		sn.JErr(c, err)
-		return
-	}
-	cl.Log.Debugf("cu: %#v", cu)
-	cl.Log.Debugf("err: %#v", err)
-
-	forward, err := datastore.DecodeCursor(obj.Forward)
-	if err != nil {
-		sn.JErr(c, err)
-		return
-	}
-
-	cl.Log.Debugf("forward: %#v", forward)
-	status := ToStatus[obj.Status]
-	t := gType.ToType[obj.Type]
 	q := datastore.
-		NewQuery("Game").
-		Filter("Status=", int(status)).
+		NewQuery(opt.Kind).
+		Filter("Status=", int(opt.Status)).
 		Order("-UpdatedAt")
 
-	if t != gType.All && t != gType.NoType {
-		q = q.Filter("Type=", int(t))
+	if opt.Type != gtype.All && opt.Type != gtype.NoType {
+		q = q.Filter("Type=", int(opt.Type))
 	}
 
-	if obj.UserID != 0 {
-		q = q.Filter("UserIDS=", obj.UserID)
+	if opt.UserID != 0 {
+		q = q.Filter("UserIDS=", opt.UserID)
 	}
 
-	cnt, err := cl.DS.Count(c, q)
+	cnt, err := cl.DS.Count(ctx, q)
 	if err != nil {
-		sn.JErr(c, err)
-		return
+		return nil, -1, datastore.Cursor{}, err
 	}
 
-	cl.Log.Debugf("cnt: %v", cnt)
-	items := obj.Options.ItemsPerPage
-	if obj.Options.ItemsPerPage == -1 {
+	items := opt.ItemsPerPage
+	if opt.ItemsPerPage == -1 {
 		items = cnt
 	}
 
-	var es []*GHeader
-	it := cl.DS.Run(c, q.Start(forward))
+	var es []*IndexEntry
+	it := cl.DS.Run(ctx, q.Start(opt.Forward))
 	for i := 0; i < items; i++ {
-		var h Header
-		k, err := it.Next(&h)
+		var e IndexEntry
+		_, err := it.Next(&e)
 		if err == iterator.Done {
 			break
 		}
 		if err != nil {
-			sn.JErr(c, err)
-			return
+			return nil, -1, datastore.Cursor{}, err
 		}
-		es = append(es, &GHeader{Key: k, Header: h})
+		es = append(es, &e)
 	}
 
-	forward, err = it.Cursor()
+	forward, err := it.Cursor()
 	if err != nil {
-		sn.JErr(c, err)
-		return
+		return nil, -1, datastore.Cursor{}, err
+	}
+	return es, cnt, forward, nil
+}
+
+// Declare a struct capable of handling any type of entity.
+// It implements the PropertyLoadSaver interface
+type IndexEntry struct {
+	Key        *datastore.Key `datastore:"__key__"`
+	Properties []datastore.Property
+}
+
+func (e *IndexEntry) Load(ps []datastore.Property) error {
+	e.Properties = ps
+	return nil
+}
+
+func (e *IndexEntry) Save() ([]datastore.Property, error) {
+	return e.Properties, nil
+}
+
+func (e *IndexEntry) LoadKey(k *datastore.Key) error {
+	e.Key = k
+	return nil
+}
+
+func (e *IndexEntry) id() int64 {
+	if e.Key != nil {
+		return e.Key.ID
+	}
+	return 0
+}
+
+// MarshalJSON implements json.Marshaler interface
+func (e IndexEntry) MarshalJSON() ([]byte, error) {
+
+	data := make(map[string]interface{})
+	for _, p := range e.Properties {
+		switch p.Name {
+		case "CreatorID":
+			data["creatorId"] = p.Value
+		case "CreatorKey":
+			data["creatorKey"] = p.Value
+		case "CreatorName":
+			data["creatorName"] = p.Value
+		case "CreatorEmailHash":
+			data["creatorEmailHash"] = p.Value
+		case "CreatorGravType":
+			data["creatorGravType"] = p.Value
+		case "Type":
+			data["type"] = p.Value
+		case "Title":
+			data["title"] = p.Value
+		case "UserIDS":
+			data["userIds"] = p.Value
+		case "UserNames":
+			data["userNames"] = p.Value
+		case "UserEmailHashes":
+			data["userEmailHashes"] = p.Value
+		case "UserGravTypes":
+			data["userGravTypes"] = p.Value
+		case "UserKeys":
+			data["userKeys"] = p.Value
+		case "Password":
+			data["password"] = p.Value
+		case "PasswordHash":
+			data["passwordHash"] = p.Value
+		case "UpdatedAt":
+			data["updatedAt"] = p.Value
+		case "CPUserIndices":
+			data["cpUserIndices"] = p.Value
+		case "CPIDS":
+			data["cpids"] = p.Value
+		case "WinnerIDS":
+			data["winnerIndices"] = p.Value
+		case "WinnerKeys":
+			data["winnerKeys"] = p.Value
+		}
 	}
 
-	cl.Log.Debugf("forward: %#v", forward)
-	cl.Log.Debugf("forward.String: %#v", forward.String())
-	c.JSON(http.StatusOK, gin.H{
-		"gheaders":   es,
-		"totalItems": cnt,
-		"forward":    forward.String(),
-		"cu":         cu,
-	})
+	data["key"] = e.Key
+	data["id"] = e.id()
+
+	password, ok := data["password"].(string)
+	if ok {
+		passwordHash, ok := data["passwordHash"].([]byte)
+		if ok {
+			data["public"] = (len(password) == 0) && (len(passwordHash) == 0)
+		}
+	}
+	delete(data, "password")
+	delete(data, "passwordHash")
+
+	updatedAt, ok := data["updatedAt"].(time.Time)
+	if ok {
+		data["lastUpdated"] = restful.LastUpdated(updatedAt)
+	}
+
+	return json.Marshal(data)
 }
+
+// func (cl *Client) GamesIndex(c *gin.Context) {
+// 	cl.Log.Debugf("Entering")
+// 	defer cl.Log.Debugf("Exiting")
+//
+// 	obj := struct {
+// 		Options struct {
+// 			ItemsPerPage int `json:"itemsPerPage"`
+// 		} `json:"options"`
+// 		Forward string `json:"forward"`
+// 		Status  string `json:"status"`
+// 		Type    string `json:"type"`
+// 		UserID  int64  `json:"userId"`
+// 	}{}
+//
+// 	err := c.ShouldBind(&obj)
+// 	if err != nil {
+// 		sn.JErr(c, err)
+// 		return
+// 	}
+//
+// 	cl.Log.Debugf("obj: %#v", obj)
+//
+// 	cu, err := cl.User.Current(c)
+// 	if err != nil {
+// 		sn.JErr(c, err)
+// 		return
+// 	}
+// 	cl.Log.Debugf("cu: %#v", cu)
+// 	cl.Log.Debugf("err: %#v", err)
+//
+// 	forward, err := datastore.DecodeCursor(obj.Forward)
+// 	if err != nil {
+// 		sn.JErr(c, err)
+// 		return
+// 	}
+//
+// 	cl.Log.Debugf("forward: %#v", forward)
+// 	status := ToStatus[obj.Status]
+// 	t := gType.ToType[obj.Type]
+// 	q := datastore.
+// 		NewQuery("Game").
+// 		Filter("Status=", int(status)).
+// 		Order("-UpdatedAt")
+//
+// 	if t != gType.All && t != gType.NoType {
+// 		q = q.Filter("Type=", int(t))
+// 	}
+//
+// 	if obj.UserID != 0 {
+// 		q = q.Filter("UserIDS=", obj.UserID)
+// 	}
+//
+// 	cnt, err := cl.DS.Count(c, q)
+// 	if err != nil {
+// 		sn.JErr(c, err)
+// 		return
+// 	}
+//
+// 	cl.Log.Debugf("cnt: %v", cnt)
+// 	items := obj.Options.ItemsPerPage
+// 	if obj.Options.ItemsPerPage == -1 {
+// 		items = cnt
+// 	}
+//
+// 	var es []*GHeader
+// 	it := cl.DS.Run(c, q.Start(forward))
+// 	for i := 0; i < items; i++ {
+// 		var h Header
+// 		k, err := it.Next(&h)
+// 		if err == iterator.Done {
+// 			break
+// 		}
+// 		if err != nil {
+// 			sn.JErr(c, err)
+// 			return
+// 		}
+// 		es = append(es, &GHeader{Key: k, Header: h})
+// 	}
+//
+// 	forward, err = it.Cursor()
+// 	if err != nil {
+// 		sn.JErr(c, err)
+// 		return
+// 	}
+//
+// 	cl.Log.Debugf("forward: %#v", forward)
+// 	cl.Log.Debugf("forward.String: %#v", forward.String())
+// 	c.JSON(http.StatusOK, gin.H{
+// 		"gheaders":   es,
+// 		"totalItems": cnt,
+// 		"forward":    forward.String(),
+// 		"cu":         cu,
+// 	})
+// }
