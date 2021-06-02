@@ -917,6 +917,10 @@ func (h *Header) SendTurnNotificationsTo(c *gin.Context, ps ...Playerer) error {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
+	if h.Type == gtype.Indonesia {
+		return nil
+	}
+
 	l := len(ps)
 	if l == 0 {
 		return nil
