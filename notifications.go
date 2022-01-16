@@ -6,7 +6,6 @@ import (
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/send"
 	gType "github.com/SlothNinja/type"
-	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 	"github.com/mailjet/mailjet-apiv3-go"
 )
@@ -53,9 +52,8 @@ func (client Client) DailyNotifications(c *gin.Context) {
 
 	for uid, gameInfos := range notifications {
 		m := msg
-		u := user.New(uid)
 
-		err := client.DS.Get(c, u.Key, u)
+		u, err := client.User.Get(c, uid)
 		if err != nil {
 			client.Log.Errorf("get user error: %s", err.Error())
 			buf.Reset()

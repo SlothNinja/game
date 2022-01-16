@@ -1,7 +1,5 @@
 module github.com/SlothNinja/game
 
-go 1.15
-
 require (
 	cloud.google.com/go/datastore v1.5.0
 	github.com/SlothNinja/color v1.0.0
