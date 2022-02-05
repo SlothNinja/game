@@ -392,6 +392,7 @@ func (cl *Client) GamesIndex(ctx context.Context, opt Options) ([]*IndexEntry, i
 	}
 
 	cnt, err := cl.DS.Count(ctx, q)
+	cl.Log.Debugf("cnt: %v err: %v", cnt, err)
 	if err != nil {
 		return nil, -1, datastore.Cursor{}, err
 	}
