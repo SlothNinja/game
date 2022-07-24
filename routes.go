@@ -1,18 +1,18 @@
 package game
 
 import (
-	"github.com/SlothNinja/sn"
+	"github.com/SlothNinja/client"
 	gtype "github.com/SlothNinja/type"
 	"github.com/SlothNinja/user"
 )
 
 type Client struct {
-	*sn.Client
+	*client.Client
 	User      *user.Client
 	afterLoad bool
 }
 
-func NewClient(snClient *sn.Client, userClient *user.Client, prefix string, afterLoad bool) *Client {
+func NewClient(snClient *client.Client, userClient *user.Client, prefix string, afterLoad bool) *Client {
 	cl := &Client{
 		Client:    snClient,
 		User:      userClient,
