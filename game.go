@@ -7,7 +7,6 @@ import (
 	"github.com/SlothNinja/color"
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/sn"
-	gtype "github.com/SlothNinja/type"
 	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -16,7 +15,7 @@ import (
 type Gamers []Gamer
 type Gamer interface {
 	PhaseName() string
-	FromParams(*gin.Context, *user.User, gtype.Type) error
+	FromParams(*gin.Context, *user.User, sn.Type) error
 	ColorMapFor(*user.User) color.Map
 	headerer
 }

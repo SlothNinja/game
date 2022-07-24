@@ -13,7 +13,6 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/sn"
-	gtype "github.com/SlothNinja/type"
 	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/api/iterator"
@@ -370,7 +369,7 @@ type Options struct {
 	Kind         string
 	Forward      datastore.Cursor
 	Status       Status
-	Type         gtype.Type
+	Type         sn.Type
 	UserID       int64
 }
 
@@ -383,7 +382,7 @@ func (cl *Client) GamesIndex(ctx context.Context, opt Options) ([]*IndexEntry, i
 		Filter("Status=", int(opt.Status)).
 		Order("-UpdatedAt")
 
-	if opt.Type != gtype.All && opt.Type != gtype.NoType {
+	if opt.Type != sn.All && opt.Type != sn.NoType {
 		q = q.Filter("Type=", int(opt.Type))
 	}
 

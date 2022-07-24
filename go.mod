@@ -11,7 +11,6 @@ require (
 	github.com/SlothNinja/restful v1.0.1
 	github.com/SlothNinja/send v1.0.2
 	github.com/SlothNinja/sn v1.0.7
-	github.com/SlothNinja/type v1.0.1
 	github.com/SlothNinja/undo v1.0.0
 	github.com/SlothNinja/user v1.0.23
 	github.com/gin-gonic/gin v1.8.1
