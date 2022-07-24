@@ -2,7 +2,7 @@ package game
 
 import (
 	"github.com/SlothNinja/client"
-	gtype "github.com/SlothNinja/type"
+	"github.com/SlothNinja/sn"
 	"github.com/SlothNinja/user"
 )
 
@@ -47,7 +47,7 @@ func (cl *Client) addRoutes(prefix string) *Client {
 	// JSON Data for Index
 	g1.POST("/:status/user/:uid/json",
 		// gtype.SetTypes(),
-		cl.GetFiltered(gtype.All),
+		cl.GetFiltered(sn.All),
 		cl.JSONIndexAction,
 	)
 

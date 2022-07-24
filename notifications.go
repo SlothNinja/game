@@ -5,7 +5,7 @@ import (
 
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/send"
-	gType "github.com/SlothNinja/type"
+	"github.com/SlothNinja/sn"
 	"github.com/gin-gonic/gin"
 	"github.com/mailjet/mailjet-apiv3-go"
 )
@@ -17,7 +17,7 @@ const (
 
 type inf struct {
 	GameID int64
-	Type   gType.Type
+	Type   sn.Type
 	Title  string
 }
 

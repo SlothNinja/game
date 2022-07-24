@@ -16,7 +16,7 @@ import (
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
 	"github.com/SlothNinja/send"
-	gtype "github.com/SlothNinja/type"
+	"github.com/SlothNinja/sn"
 	"github.com/SlothNinja/undo"
 	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
@@ -32,7 +32,7 @@ type Header struct {
 	Users   user.Users     `datastore:"-" json:"users"`
 	Key     *datastore.Key `datastore:"__key__"`
 
-	Type                      gtype.Type       `json:"type"`
+	Type                      sn.Type          `json:"type"`
 	Title                     string           `form:"title" json:"title"`
 	Turn                      int              `form:"turn" json:"turn" binding:"min=0"`
 	Phase                     Phase            `form:"phase" json:"phase" binding:"min=0"`
@@ -177,15 +177,15 @@ func NewHeader(c *gin.Context, g Gamer, id int64) *Header {
 
 type Strings []string
 
-type ColorMaps map[gtype.Type]color.Colors
+type ColorMaps map[sn.Type]color.Colors
 
 var defaultColorMaps = ColorMaps{
-	gtype.Confucius:  color.Colors{color.Yellow, color.Purple, color.Green, color.White, color.Black},
-	gtype.Tammany:    color.Colors{color.Red, color.Yellow, color.Purple, color.Black, color.Brown},
-	gtype.ATF:        color.Colors{color.Red, color.Green, color.Purple},
-	gtype.GOT:        color.Colors{color.Yellow, color.Purple, color.Green, color.Black},
-	gtype.Indonesia:  color.Colors{color.White, color.Black, color.Green, color.Purple, color.Orange},
-	gtype.Gettysburg: color.Colors{color.White, color.Black},
+	sn.Confucius:  color.Colors{color.Yellow, color.Purple, color.Green, color.White, color.Black},
+	sn.Tammany:    color.Colors{color.Red, color.Yellow, color.Purple, color.Black, color.Brown},
+	sn.ATF:        color.Colors{color.Red, color.Green, color.Purple},
+	sn.GOT:        color.Colors{color.Yellow, color.Purple, color.Green, color.Black},
+	sn.Indonesia:  color.Colors{color.White, color.Black, color.Green, color.Purple, color.Orange},
+	sn.Gettysburg: color.Colors{color.White, color.Black},
 }
 
 func (h *Header) DefaultColorMap() color.Colors {
@@ -220,7 +220,7 @@ func actionPath(r *http.Request) string {
 	return s[len(s)-1]
 }
 
-func (h *Header) FromParams(c *gin.Context, cu *user.User, t gtype.Type) error {
+func (h *Header) FromParams(c *gin.Context, cu *user.User, t sn.Type) error {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
@@ -230,7 +230,7 @@ func (h *Header) FromParams(c *gin.Context, cu *user.User, t gtype.Type) error {
 	return nil
 }
 
-func (h *Header) FromForm(c *gin.Context, cu *user.User, t gtype.Type) error {
+func (h *Header) FromForm(c *gin.Context, cu *user.User, t sn.Type) error {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
@@ -263,16 +263,16 @@ func (h *Header) FromForm(c *gin.Context, cu *user.User, t gtype.Type) error {
 	return nil
 }
 
-func getType(form url.Values) gtype.Type {
+func getType(form url.Values) sn.Type {
 	sType := form.Get("game-type")
 	iType, err := strconv.Atoi(sType)
 	if err != nil {
-		return gtype.NoType
+		return sn.NoType
 	}
 
-	t := gtype.Type(iType)
-	if _, ok := gtype.TypeStrings[t]; !ok {
-		return gtype.NoType
+	t := sn.Type(iType)
+	if _, ok := sn.TypeStrings[t]; !ok {
+		return sn.NoType
 	}
 	return t
 }
@@ -811,31 +811,31 @@ func (p Phase) Int() int {
 }
 
 type PhaseNameMap map[Phase]string
-type PhaseNameMaps map[gtype.Type]PhaseNameMap
+type PhaseNameMaps map[sn.Type]PhaseNameMap
 
-func registerPhaseNames(t gtype.Type, names PhaseNameMap) {
+func registerPhaseNames(t sn.Type, names PhaseNameMap) {
 	if phaseNameMaps == nil {
-		phaseNameMaps = make(PhaseNameMaps, len(gtype.Types))
+		phaseNameMaps = make(PhaseNameMaps, len(sn.Types))
 	}
 	phaseNameMaps[t] = names
 }
 
-func registerSubPhaseNames(t gtype.Type, names SubPhaseNameMap) {
+func registerSubPhaseNames(t sn.Type, names SubPhaseNameMap) {
 	if subPhaseNameMaps == nil {
-		subPhaseNameMaps = make(SubPhaseNameMaps, len(gtype.Types))
+		subPhaseNameMaps = make(SubPhaseNameMaps, len(sn.Types))
 	}
 	subPhaseNameMaps[t] = names
 }
 
-type factoryMap map[gtype.Type]Factory
+type factoryMap map[sn.Type]Factory
 
 var factories factoryMap
 
 type Factory func(*gin.Context) Gamer
 
-func Register(t gtype.Type, f Factory, p PhaseNameMap, sp SubPhaseNameMap) {
+func Register(t sn.Type, f Factory, p PhaseNameMap, sp SubPhaseNameMap) {
 	if factories == nil {
-		factories = make(factoryMap, len(gtype.Types))
+		factories = make(factoryMap, len(sn.Types))
 	}
 	factories[t] = f
 	registerPhaseNames(t, p)
@@ -854,7 +854,7 @@ func (h *Header) PhaseName() string {
 
 type SubPhase int
 type SubPhaseNameMap map[SubPhase]string
-type SubPhaseNameMaps map[gtype.Type]SubPhaseNameMap
+type SubPhaseNameMaps map[sn.Type]SubPhaseNameMap
 
 func (h *Header) SubPhaseName() string {
 	if subPhaseNameMaps == nil {
@@ -917,7 +917,7 @@ func (h *Header) SendTurnNotificationsTo(c *gin.Context, ps ...Playerer) error {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	if h.Type == gtype.Indonesia {
+	if h.Type == sn.Indonesia {
 		return nil
 	}
 

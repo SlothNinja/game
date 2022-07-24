@@ -8,7 +8,7 @@ import (
 
 	"cloud.google.com/go/datastore"
 	"github.com/SlothNinja/log"
-	gtype "github.com/SlothNinja/type"
+	"github.com/SlothNinja/sn"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,7 +22,7 @@ func getAllQuery(c *gin.Context) *datastore.Query {
 	return datastore.NewQuery("Game").Ancestor(GamesRoot(c))
 }
 
-func (client *Client) getFiltered(c *gin.Context, status, sid, start, length string, t gtype.Type) (Gamers, int64, error) {
+func (client *Client) getFiltered(c *gin.Context, status, sid, start, length string, t sn.Type) (Gamers, int64, error) {
 	client.Log.Debugf("Entering")
 	defer client.Log.Debugf("Exiting")
 
@@ -41,7 +41,7 @@ func (client *Client) getFiltered(c *gin.Context, status, sid, start, length str
 		}
 	}
 
-	if t != gtype.All {
+	if t != sn.All {
 		q = q.Filter("Type=", int(t)).
 			Order("-UpdatedAt")
 	} else {
@@ -75,9 +75,9 @@ func (client *Client) getFiltered(c *gin.Context, status, sid, start, length str
 	hs := make([]*Header, l)
 	for i := range gs {
 		var ok bool
-		if t == gtype.All {
+		if t == sn.All {
 			k := strings.ToLower(ks[i].Parent.Kind)
-			if t, ok = gtype.ToType[k]; !ok {
+			if t, ok = sn.ToType[k]; !ok {
 				return nil, 0, fmt.Errorf("Unknown Game Type For: %s", k)
 			}
 		}
@@ -134,7 +134,7 @@ func countFrom(c *gin.Context) (cnt int64) {
 	return
 }
 
-func (client Client) GetFiltered(t gtype.Type) gin.HandlerFunc {
+func (client Client) GetFiltered(t sn.Type) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		client.Log.Debugf("Entering")
 		defer client.Log.Debugf("Exiting")
@@ -154,7 +154,7 @@ func (client Client) GetRunning(c *gin.Context) {
 	client.Log.Debugf("Entering")
 	defer client.Log.Debugf("Exiting")
 
-	gs, cnt, err := client.getFiltered(c, c.Param("status"), "", "", "", gtype.All)
+	gs, cnt, err := client.getFiltered(c, c.Param("status"), "", "", "", sn.All)
 
 	if err != nil {
 		client.Log.Errorf(err.Error())
