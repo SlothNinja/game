@@ -19,6 +19,10 @@ const (
 	All Type = 10000
 )
 
+func Types() []Type {
+	return []Type{Confucius, Tammany, ATF, GOT, Indonesia, Gettysburg}
+}
+
 // String returns string name of game type constant
 func (t Type) String() string {
 	ss := map[Type]string{
