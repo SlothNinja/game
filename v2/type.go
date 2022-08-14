@@ -1,6 +1,9 @@
 package game
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"strings"
+)
 
 type Type int
 
@@ -61,7 +64,7 @@ func (t Type) SString() string {
 
 // MarshalJSON implements json.Marshaler interface to provide custom json marshalling.
 func (t Type) MarshalJSON() ([]byte, error) {
-	return json.Marshal(t.SString())
+	return json.Marshal(strings.ToLower(t.SString()))
 }
 
 // UnmarshalJSON implements json.Unmarshaler interface to provide custom json unmarshalling
@@ -87,7 +90,7 @@ func ToType(s string) Type {
 		"gettysburg": Gettysburg,
 		"all":        All,
 	}
-	v, ok := ss[s]
+	v, ok := ss[strings.ToLower(s)]
 	if ok {
 		return v
 	}
